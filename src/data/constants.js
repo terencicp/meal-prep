@@ -92,8 +92,8 @@ export const FOOD_GROUPS = [
     iconColor: "text-cyan-500",
   },
   {
-    id: "iogurt",
-    name: "Iogurt",
+    id: "yogurt",
+    name: "Yogurt",
     kCal: 60,
     carbs: 5,
     fats: 2,
@@ -128,6 +128,6 @@ export const DEFAULT_CALORIE_GOAL = 2000;
 
 export const INITIAL_MEALS = {
   Breakfast: { seeds: 70, veggies: 300, fruit: 70, nuts: 30, meat: 50 },
-  Lunch: { starches: 70, veggies: 300, fruit: 70, nuts: 30, iogurt: 60 },
+  Lunch: { starches: 70, veggies: 300, fruit: 70, nuts: 30, yogurt: 60 },
   Dinner: { seeds: 70, veggies: 300, fruit: 70, avocado: 100, eggs: 45 },
 };

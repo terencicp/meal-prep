@@ -23,7 +23,7 @@ The app uses predefined food groups. You choose grams for each food group in eac
 5. Avocado
 6. Nuts (like almonds, walnuts, cashews, etc.)
 7. Meat (or fish)
-8. Iogurt
+8. Yogurt
 9. Eggs
 
 ## How it works

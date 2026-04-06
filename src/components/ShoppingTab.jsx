@@ -2,6 +2,7 @@ import React from "react";
 import { CalendarDays, ShoppingCart, CheckCircle2, Circle } from "lucide-react";
 
 const EGG_WEIGHT_GRAMS = 50;
+const YOGURT_WEIGHT_GRAMS = 120;
 
 function formatShoppingAmount(item) {
   const totalGrams = item.finalAmountKg * 1000;
@@ -9,6 +10,13 @@ function formatShoppingAmount(item) {
   if (item.id === "eggs") {
     return {
       value: Math.ceil(totalGrams / EGG_WEIGHT_GRAMS),
+      unit: "",
+    };
+  }
+
+  if (item.id === "yogurt") {
+    return {
+      value: Math.ceil(totalGrams / YOGURT_WEIGHT_GRAMS),
       unit: "",
     };
   }
@@ -125,6 +133,10 @@ export default function ShoppingTab({
           </div>
         </div>
       </div>
+
+      <p className='text-xs text-slate-400 text-center px-2'>
+        A yogurt is 120 grams, an egg is 50 grams.
+      </p>
     </div>
   );
 }
