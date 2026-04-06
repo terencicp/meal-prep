@@ -1,4 +1,5 @@
 import { initializeApp } from "firebase/app";
+import { initializeAppCheck, ReCaptchaV3Provider } from "firebase/app-check";
 import { getAuth, GoogleAuthProvider } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 
@@ -16,12 +17,28 @@ const hasFirebaseConfig = Object.values(firebaseConfig).every(
   (value) => typeof value === "string" && value.trim().length > 0,
 );
 
+const recaptchaSiteKey = import.meta.env.VITE_RECAPTCHA_V3_SITE_KEY;
+const hasRecaptchaSiteKey =
+  typeof recaptchaSiteKey === "string" && recaptchaSiteKey.trim().length > 0;
+
 let auth = null;
 let db = null;
 let googleProvider = null;
 
 if (hasFirebaseConfig) {
   const app = initializeApp(firebaseConfig);
+
+  if (hasRecaptchaSiteKey) {
+    initializeAppCheck(app, {
+      provider: new ReCaptchaV3Provider(recaptchaSiteKey),
+      isTokenAutoRefreshEnabled: true,
+    });
+  } else {
+    console.warn(
+      "VITE_RECAPTCHA_V3_SITE_KEY is missing. Firebase App Check is disabled.",
+    );
+  }
+
   auth = getAuth(app);
   db = getFirestore(app);
   googleProvider = new GoogleAuthProvider();
