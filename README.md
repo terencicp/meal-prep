@@ -46,7 +46,7 @@ You can set a daily calorie goal in the planner to track whether your meals are 
 
 In the `Prepare meal` tab, pick the meal you are about to prepare to view a checklist the food groups and amounts for that meal.
 
-### 4) Build shopping list for N days
+### 4) Shopping list
 
 In the `Shopping list` tab, choose how many days you are shopping for.
 
