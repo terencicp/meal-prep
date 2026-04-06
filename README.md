@@ -28,9 +28,13 @@ The app uses predefined food groups. You choose grams for each food group in eac
 
 ## How it works
 
-### 1) Plan meals
+### 1) Set calorie goal
 
-In the `Plan meals` tab, set grams for each food group in:
+Start in the `Plan meals` tab by setting your daily calorie goal, which helps you quickly see whether your planned meals are close to your goal.
+
+### 2) Plan meals
+
+Then, set grams for each food group in:
 
 - Breakfast
 - Lunch
@@ -38,16 +42,10 @@ In the `Plan meals` tab, set grams for each food group in:
 
 As you edit grams, PrepMaster recalculates calories, carbs, fats, and protein in real time.
 
-### 2) Set calorie goal
-
-You can set a daily calorie goal in the planner to track whether your meals are on target.
-
 ### 3) Prepare meal
 
-In the `Prepare meal` tab, pick the meal you are about to prepare to view a checklist the food groups and amounts for that meal.
+In the `Prepare meal` tab, pick the meal you are about to prepare to view a checklist with the amount for each food group.
 
 ### 4) Shopping list
 
-In the `Shopping list` tab, choose how many days you are shopping for.
-
-PrepMaster multiplies daily planned portions by the selected days (accounting for inedible food portion) and shows how much to buy per food group.
+In the `Shopping list` tab, choose how many days you are shopping for to get a list of how much to buy per food group.

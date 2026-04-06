@@ -36,89 +36,6 @@ export default function PlannerTab({
 }) {
   return (
     <div className='space-y-8 flex flex-col items-center'>
-      <div className='grid grid-cols-1 md:grid-cols-3 gap-6 w-full'>
-        {MEAL_NAMES.map((meal) => (
-          <div
-            key={meal}
-            className='bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col'
-          >
-            <div className='bg-slate-50 p-4 border-b border-slate-100 flex items-center justify-between'>
-              <h3 className='font-bold text-xl md:text-lg text-slate-800 flex items-center'>
-                <Utensils className='w-4 h-4 mr-2 text-slate-400' />
-                {meal}
-              </h3>
-            </div>
-
-            <div className='flex items-center justify-between px-4 py-3 bg-white border-b border-slate-50 text-sm md:text-xs font-medium text-slate-500'>
-              <span className='text-slate-800 font-bold text-lg md:text-base'>
-                {Math.round(mealTotals[meal].kCal)} kcal
-              </span>
-              <div className='flex items-center space-x-3'>
-                <span className='text-blue-700'>
-                  C: {Math.round(mealTotals[meal].carbs)}
-                </span>
-                <span className='text-green-700'>
-                  F: {Math.round(mealTotals[meal].fats)}
-                </span>
-                <span className='text-rose-700'>
-                  P: {Math.round(mealTotals[meal].protein)}
-                </span>
-              </div>
-            </div>
-
-            <div className='p-2 space-y-1'>
-              {FOOD_GROUPS.map((food) => {
-                const grams = meals[meal]?.[food.id] || "";
-                const isActive = grams > 0;
-
-                return (
-                  <div
-                    key={food.id}
-                    className={`flex items-center justify-between p-2 rounded-xl transition-all ${
-                      isActive
-                        ? "bg-slate-50 border border-slate-100"
-                        : "hover:bg-slate-50 border border-transparent"
-                    }`}
-                  >
-                    <div className='flex items-center space-x-3'>
-                      <div
-                        className={`w-3 h-3 rounded-full ${food.color} shadow-sm border border-white`}
-                      ></div>
-                      <span
-                        className={`text-base md:text-sm font-medium ${isActive ? "text-slate-800" : "text-slate-500"}`}
-                      >
-                        {food.name}
-                      </span>
-                    </div>
-
-                    <div className='relative flex items-center justify-end w-20'>
-                      <input
-                        type='number'
-                        min='0'
-                        step='5'
-                        value={grams}
-                        onChange={(e) =>
-                          handleGramsChange(meal, food.id, e.target.value)
-                        }
-                        placeholder='0'
-                        className={`w-full text-right pr-6 pl-2 py-1.5 rounded-lg border text-base md:text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-green-500 transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${
-                          isActive
-                            ? "border-slate-300 bg-white text-slate-900"
-                            : "border-slate-200 bg-slate-50/50 text-slate-400"
-                        }`}
-                      />
-                      <span className='absolute right-2.5 text-sm md:text-xs text-slate-400 pointer-events-none font-medium'>
-                        g
-                      </span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        ))}
-      </div>
-
       <div className='bg-white w-full rounded-2xl shadow-sm border border-slate-100 p-6'>
         <div className='mb-4'>
           <h2 className='text-base md:text-sm font-bold text-slate-600 uppercase tracking-wider'>
@@ -234,6 +151,89 @@ export default function PlannerTab({
             </div>
           </div>
         </div>
+      </div>
+
+      <div className='grid grid-cols-1 md:grid-cols-3 gap-6 w-full'>
+        {MEAL_NAMES.map((meal) => (
+          <div
+            key={meal}
+            className='bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col'
+          >
+            <div className='bg-slate-50 p-4 border-b border-slate-100 flex items-center justify-between'>
+              <h3 className='font-bold text-xl md:text-lg text-slate-800 flex items-center'>
+                <Utensils className='w-4 h-4 mr-2 text-slate-400' />
+                {meal}
+              </h3>
+            </div>
+
+            <div className='flex items-center justify-between px-4 py-3 bg-white border-b border-slate-50 text-sm md:text-xs font-medium text-slate-500'>
+              <span className='text-slate-800 font-bold text-lg md:text-base'>
+                {Math.round(mealTotals[meal].kCal)} kcal
+              </span>
+              <div className='flex items-center space-x-3'>
+                <span className='text-blue-700'>
+                  C: {Math.round(mealTotals[meal].carbs)}
+                </span>
+                <span className='text-green-700'>
+                  F: {Math.round(mealTotals[meal].fats)}
+                </span>
+                <span className='text-rose-700'>
+                  P: {Math.round(mealTotals[meal].protein)}
+                </span>
+              </div>
+            </div>
+
+            <div className='p-2 space-y-1'>
+              {FOOD_GROUPS.map((food) => {
+                const grams = meals[meal]?.[food.id] || "";
+                const isActive = grams > 0;
+
+                return (
+                  <div
+                    key={food.id}
+                    className={`flex items-center justify-between p-2 rounded-xl transition-all ${
+                      isActive
+                        ? "bg-slate-50 border border-slate-100"
+                        : "hover:bg-slate-50 border border-transparent"
+                    }`}
+                  >
+                    <div className='flex items-center space-x-3'>
+                      <div
+                        className={`w-3 h-3 rounded-full ${food.color} shadow-sm border border-white`}
+                      ></div>
+                      <span
+                        className={`text-base md:text-sm font-medium ${isActive ? "text-slate-800" : "text-slate-500"}`}
+                      >
+                        {food.name}
+                      </span>
+                    </div>
+
+                    <div className='relative flex items-center justify-end w-20'>
+                      <input
+                        type='number'
+                        min='0'
+                        step='5'
+                        value={grams}
+                        onChange={(e) =>
+                          handleGramsChange(meal, food.id, e.target.value)
+                        }
+                        placeholder='0'
+                        className={`w-full text-right pr-6 pl-2 py-1.5 rounded-lg border text-base md:text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-green-500 transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${
+                          isActive
+                            ? "border-slate-300 bg-white text-slate-900"
+                            : "border-slate-200 bg-slate-50/50 text-slate-400"
+                        }`}
+                      />
+                      <span className='absolute right-2.5 text-sm md:text-xs text-slate-400 pointer-events-none font-medium'>
+                        g
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ))}
       </div>
 
       <div className='w-full flex justify-center'>{authControls}</div>
