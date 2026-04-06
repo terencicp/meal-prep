@@ -121,7 +121,7 @@ export default function PlannerTab({
 
       <div className='bg-white w-full rounded-2xl shadow-sm border border-slate-100 p-6'>
         <div className='mb-4'>
-          <h2 className='text-base md:text-sm font-bold text-slate-400 uppercase tracking-wider'>
+          <h2 className='text-base md:text-sm font-bold text-slate-600 uppercase tracking-wider'>
             Daily totals
           </h2>
         </div>
@@ -166,9 +166,9 @@ export default function PlannerTab({
             <div className='flex justify-between text-sm md:text-xs mb-1.5'>
               <span className='font-bold text-slate-700'>Calories</span>
             </div>
-            <div className='h-3 w-full bg-slate-100 rounded-full overflow-hidden flex'>
+            <div className='h-3 w-full bg-slate-100 rounded-full overflow-hidden flex border border-slate-300'>
               <div
-                className={`h-full transition-all duration-500 ${isOutsideTolerance ? "bg-orange-500" : "bg-slate-800"}`}
+                className={`h-full transition-all duration-500 ${isOutsideTolerance ? "bg-orange-400" : "bg-slate-500"}`}
                 style={{ width: `${kcalPct}%` }}
               ></div>
             </div>
@@ -185,47 +185,50 @@ export default function PlannerTab({
 
           <div>
             <div className='flex justify-between text-sm md:text-xs mb-1.5'>
-              <span className='font-bold text-slate-700'>
-                Macros proportion
-              </span>
+              <span className='font-bold text-slate-700'>Macronutrients</span>
             </div>
             <div className='h-3 w-full bg-slate-100 rounded-full overflow-hidden flex'>
               <div
-                className='h-full bg-blue-500 transition-all duration-500'
+                className='h-full bg-blue-300 transition-all duration-500'
                 style={{ width: `${carbsPct}%` }}
                 title={`Carbs: ${Math.round(carbsPct)}%`}
               ></div>
               <div
-                className='h-full bg-green-500 transition-all duration-500'
+                className='h-full bg-green-300 transition-all duration-500'
                 style={{ width: `${fatsPct}%` }}
                 title={`Fats: ${Math.round(fatsPct)}%`}
               ></div>
               <div
-                className='h-full bg-rose-500 transition-all duration-500'
+                className='h-full bg-rose-300 transition-all duration-500'
                 style={{ width: `${proteinPct}%` }}
                 title={`Protein: ${Math.round(proteinPct)}%`}
               ></div>
             </div>
             <div className='flex justify-between text-sm md:text-xs mt-1.5 px-1'>
-              <div className='flex items-center space-x-1.5'>
-                <div className='w-2.5 h-2.5 rounded-full bg-blue-500'></div>
-                <span className='font-medium text-slate-600'>
-                  {Math.round(carbsPct)}%{" "}
-                  <span className='hidden sm:inline'>Carbs</span>
+              <div className='flex items-center'>
+                <span className='font-medium text-blue-700'>
+                  <span className='sm:hidden'>C: {Math.round(carbsPct)}%</span>
+                  <span className='hidden sm:inline'>
+                    {Math.round(carbsPct)}% Carbs
+                  </span>
                 </span>
               </div>
-              <div className='flex items-center space-x-1.5'>
-                <div className='w-2.5 h-2.5 rounded-full bg-green-500'></div>
-                <span className='font-medium text-slate-600'>
-                  {Math.round(fatsPct)}%{" "}
-                  <span className='hidden sm:inline'>Fats</span>
+              <div className='flex items-center'>
+                <span className='font-medium text-green-700'>
+                  <span className='sm:hidden'>F: {Math.round(fatsPct)}%</span>
+                  <span className='hidden sm:inline'>
+                    {Math.round(fatsPct)}% Fats
+                  </span>
                 </span>
               </div>
-              <div className='flex items-center space-x-1.5'>
-                <div className='w-2.5 h-2.5 rounded-full bg-rose-500'></div>
-                <span className='font-medium text-slate-600'>
-                  {Math.round(proteinPct)}%{" "}
-                  <span className='hidden sm:inline'>Protein</span>
+              <div className='flex items-center'>
+                <span className='font-medium text-rose-700/90'>
+                  <span className='sm:hidden'>
+                    P: {Math.round(proteinPct)}%
+                  </span>
+                  <span className='hidden sm:inline'>
+                    {Math.round(proteinPct)}% Protein
+                  </span>
                 </span>
               </div>
             </div>
