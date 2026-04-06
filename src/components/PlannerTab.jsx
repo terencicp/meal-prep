@@ -34,6 +34,13 @@ export default function PlannerTab({
   proteinPct,
   authControls,
 }) {
+  const handleSelectInputContent = (event) => {
+    // Delay selection slightly so mobile browsers finish placing focus first.
+    requestAnimationFrame(() => {
+      event.target.select();
+    });
+  };
+
   return (
     <div className='space-y-8 flex flex-col items-center'>
       <div className='bg-white w-full rounded-2xl shadow-sm border border-slate-100 p-6'>
@@ -53,6 +60,8 @@ export default function PlannerTab({
               step='50'
               value={calorieGoal}
               onChange={(e) => setCalorieGoal(Number(e.target.value))}
+              onFocus={handleSelectInputContent}
+              onClick={handleSelectInputContent}
               className='w-20 text-center px-1 py-0.5 rounded bg-white text-xl md:text-lg font-bold text-slate-800 focus:ring-2 focus:ring-green-500 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none'
             />
           </div>
@@ -217,6 +226,8 @@ export default function PlannerTab({
                         onChange={(e) =>
                           handleGramsChange(meal, food.id, e.target.value)
                         }
+                        onFocus={handleSelectInputContent}
+                        onClick={handleSelectInputContent}
                         placeholder='0'
                         className={`w-full text-right pr-6 pl-2 py-1.5 rounded-lg border text-base md:text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-green-500 transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${
                           isActive
