@@ -1,6 +1,6 @@
 # PrepMaster
 
-PrepMaster is a simple meal planning app focused on food group portions, calorie awareness, and practical shopping prep.
+PrepMaster is a simple meal planning app focused on calorie awareness.
 
 It helps you:
 
@@ -10,34 +10,27 @@ It helps you:
 - Follow your plan during meal prep in a clean checklist view
 - Generate a shopping list for a chosen number of days
 
-## What This Project Does
+## Meal planning
 
-This app uses 9 predefined food groups. You choose grams for each food group in each meal, and the app calculates:
+The app uses predefined food groups. You choose grams for each food group in each meal, and the app calculates calories and macros per meal and daily totals. The planner and settings are saved locally by default, and can sync with Google after logging in.
 
-- Calories and macros per meal
-- Daily totals
-- Progress against your calorie goal
-- Shopping amounts for X days
+## Food groups
 
-The planner and settings are saved locally by default, and can sync with Google after logging in.
-
-## The 9 Predefined Food Groups
-
-1. Seeds
-2. Starches
-3. Veggies
-4. Fruit
+1. Seeds (like rice, oats, lentils, chickpeas, etc.)
+2. Starches (like potatoes, sweet potatoes, etc.)
+3. Veggies (like broccoli, spinach, bell peppers, etc.)
+4. Fruit (like banana, apple, berries, etc.)
 5. Avocado
-6. Nuts
-7. Meat
+6. Nuts (like almonds, walnuts, cashews, etc.)
+7. Meat (or fish)
 8. Iogurt
 9. Eggs
 
-## How It Works (High Level)
+## How it works
 
 ### 1) Plan meals
 
-In the Plan meals tab, set grams for each food group in:
+In the `Plan meals` tab, set grams for each food group in:
 
 - Breakfast
 - Lunch
@@ -47,27 +40,14 @@ As you edit grams, PrepMaster recalculates calories, carbs, fats, and protein in
 
 ### 2) Set calorie goal
 
-You can set a daily calorie goal in the planner.
-
-The app compares planned calories vs goal and highlights whether you are over, under, or on target.
+You can set a daily calorie goal in the planner to track whether your meals are on target.
 
 ### 3) Prepare meal
 
-In the Prepare meal tab, pick the meal you are about to prepare and see only the food groups with non-zero amounts for that meal.
+In the `Prepare meal` tab, pick the meal you are about to prepare to view a checklist the food groups and amounts for that meal.
 
-This gives you a clean checklist of what to prepare and how much (in grams).
+### 4) Build shopping list for N days
 
-### 4) Build shopping list for X days
+In the `Shopping list` tab, choose how many days you are shopping for.
 
-In the Shopping list tab, choose how many days you are shopping for.
-
-PrepMaster multiplies daily planned portions by the selected days and shows how much to buy per food group.
-
-- Most items are displayed in grams or kilograms
-- Eggs are displayed as units (estimated from grams)
-
-## Tech Stack
-
-- React + Vite
-- Firebase Auth + Firestore (optional cloud sync)
-- LocalStorage fallback for local-only use
+PrepMaster multiplies daily planned portions by the selected days (accounting for inedible food portion) and shows how much to buy per food group.

@@ -11,7 +11,14 @@ export default function Header({ activeTab, setActiveTab, isLoggedIn }) {
           <div className='flex items-center space-x-2'>
             <Leaf className={`w-6 h-6 ${brandColorClass}`} />
             <h1 className={`text-xl font-bold ${brandColorClass}`}>
-              PrepMaster
+              <a
+                href='https://github.com/terencicp/meal-prep'
+                target='_blank'
+                rel='noopener noreferrer'
+                className='hover:underline'
+              >
+                PrepMaster
+              </a>
             </h1>
           </div>
           <div className='flex items-center space-x-1 bg-slate-100 p-1 rounded-xl'>
