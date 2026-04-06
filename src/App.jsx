@@ -136,7 +136,7 @@ export default function App() {
       onClick={handleSaveClick}
       className='px-4 py-2 rounded-lg text-sm font-medium bg-green-600 text-white hover:bg-green-700 transition-colors'
     >
-      Save / restore
+      Sync with Google
     </button>
   ) : (
     <div className='flex items-center space-x-2'>
