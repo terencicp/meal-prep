@@ -1,6 +1,4 @@
 import React, { useState } from "react";
-import { signInWithPopup, signOut } from "firebase/auth";
-import { auth, googleProvider } from "./firebase";
 import { useSyncMeals } from "./hooks/useSyncMeals";
 import { useMealCalculations } from "./hooks/useMealCalculations";
 import {
@@ -11,6 +9,7 @@ import Header from "./components/Header";
 import PrepareMealTab from "./components/PrepareMealTab";
 import PlannerTab from "./components/PlannerTab";
 import ShoppingTab from "./components/ShoppingTab";
+import MealPlansModal from "./components/MealPlansModal";
 
 function getDefaultMealByLocalHour() {
   const hour = new Date().getHours();
@@ -40,10 +39,9 @@ function hasStoredPlannerData() {
 
 export default function App() {
   const [activeTab, setActiveTab] = useState(() => {
-    const isLoggedIn = Boolean(auth?.currentUser);
     const hasLocalData = hasStoredPlannerData();
 
-    return !isLoggedIn && !hasLocalData ? "planner" : "prepare";
+    return !hasLocalData ? "planner" : "prepare";
   });
   const {
     user,
@@ -53,10 +51,28 @@ export default function App() {
     setCalorieGoal,
     prepDays,
     setPrepDays,
+    mealPlans,
+    activePlanId,
+    isPlansLoading,
+    isInitialPlanSetupRequired,
+    createMealPlan,
+    selectMealPlan,
+    deleteMealPlan,
+    syncWithGoogle,
+    signOutUser,
   } = useSyncMeals();
   const [mealToPrepare, setMealToPrepare] = useState(getDefaultMealByLocalHour);
   const [checkedItems, setCheckedItems] = useState({});
   const [checkedShoppingItems, setCheckedShoppingItems] = useState({});
+  const [isMealPlansModalVisible, setIsMealPlansModalVisible] = useState(false);
+  const [planNameInput, setPlanNameInput] = useState("");
+
+  const isMealPlansModalOpen = Boolean(user) && isMealPlansModalVisible;
+  const hasActiveSavedPlan = Boolean(user && activePlanId);
+  const activeMealPlanName =
+    user && activePlanId
+      ? mealPlans.find((plan) => plan.id === activePlanId)?.name || "Meal plan"
+      : null;
 
   // --- HANDLERS ---
   const handleGramsChange = (mealName, foodId, value) => {
@@ -88,30 +104,41 @@ export default function App() {
   };
 
   const handleSaveClick = async () => {
-    if (!auth || !googleProvider) {
-      console.warn(
-        "Firebase auth is not configured. Add VITE_FIREBASE_* env vars to enable sign-in.",
-      );
-      return;
-    }
-
-    try {
-      await signInWithPopup(auth, googleProvider);
-    } catch (error) {
-      console.error("Sign-in failed:", error);
+    const signedIn = await syncWithGoogle();
+    if (signedIn) {
+      setIsMealPlansModalVisible(true);
     }
   };
 
   const handleSignOut = async () => {
-    if (!auth) {
+    const signedOut = await signOutUser();
+    if (signedOut) {
+      setIsMealPlansModalVisible(false);
+      setPlanNameInput("");
+    }
+  };
+
+  const closeMealPlansModal = () => {
+    setIsMealPlansModalVisible(false);
+  };
+
+  const handleSaveMealPlan = async () => {
+    const createdPlanId = await createMealPlan(planNameInput);
+    if (!createdPlanId) {
       return;
     }
 
-    try {
-      await signOut(auth);
-    } catch (error) {
-      console.error("Sign-out failed:", error);
-    }
+    setPlanNameInput("");
+    setIsMealPlansModalVisible(false);
+  };
+
+  const handleSelectMealPlan = async (planId) => {
+    await selectMealPlan(planId);
+    setIsMealPlansModalVisible(false);
+  };
+
+  const handleDeleteMealPlan = async (planId) => {
+    await deleteMealPlan(planId);
   };
 
   const {
@@ -140,6 +167,12 @@ export default function App() {
     </button>
   ) : (
     <div className='flex items-center space-x-2'>
+      <button
+        onClick={() => setIsMealPlansModalVisible(true)}
+        className='min-w-30 py-2 rounded-lg text-sm font-medium bg-white border border-slate-300 text-slate-700 hover:bg-slate-100 transition-colors'
+      >
+        {hasActiveSavedPlan ? "Switch plan" : "Save plan"}
+      </button>
       {user.photoURL ? (
         <img
           src={user.photoURL}
@@ -153,9 +186,9 @@ export default function App() {
       )}
       <button
         onClick={handleSignOut}
-        className='px-3 py-2 rounded-lg text-sm font-medium bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors'
+        className='min-w-30 py-2 rounded-lg text-sm font-medium bg-white border border-slate-300 text-slate-700 hover:bg-slate-100 transition-colors'
       >
-        Sign Out
+        Sign out
       </button>
     </div>
   );
@@ -167,6 +200,7 @@ export default function App() {
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         isLoggedIn={Boolean(user)}
+        hasActiveSavedPlan={hasActiveSavedPlan}
       />
 
       <main className='max-w-5xl mx-auto px-4 sm:px-6 py-8'>
@@ -196,6 +230,7 @@ export default function App() {
             carbsPct={carbsPct}
             fatsPct={fatsPct}
             proteinPct={proteinPct}
+            activeMealPlanName={activeMealPlanName}
             authControls={authControls}
           />
         )}
@@ -211,6 +246,21 @@ export default function App() {
           />
         )}
       </main>
+
+      <MealPlansModal
+        isOpen={isMealPlansModalOpen}
+        canClose
+        onClose={closeMealPlansModal}
+        mealPlans={mealPlans}
+        activePlanId={activePlanId}
+        isInitialPlanSetupRequired={isInitialPlanSetupRequired}
+        planNameInput={planNameInput}
+        setPlanNameInput={setPlanNameInput}
+        isPlansLoading={isPlansLoading}
+        onSavePlan={handleSaveMealPlan}
+        onSelectPlan={handleSelectMealPlan}
+        onDeletePlan={handleDeleteMealPlan}
+      />
     </div>
   );
 }

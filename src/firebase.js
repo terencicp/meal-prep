@@ -1,6 +1,5 @@
 import { initializeApp } from "firebase/app";
 import { initializeAppCheck, ReCaptchaV3Provider } from "firebase/app-check";
-import { getAuth, GoogleAuthProvider } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 
 // Replace these placeholders with your Firebase project settings.
@@ -23,29 +22,61 @@ const hasRecaptchaSiteKey =
 
 let auth = null;
 let db = null;
-let googleProvider = null;
+let app = null;
+let authDependenciesPromise = null;
+let isAppCheckInitialized = false;
 
 if (hasFirebaseConfig) {
-  const app = initializeApp(firebaseConfig);
+  app = initializeApp(firebaseConfig);
 
-  if (hasRecaptchaSiteKey) {
-    initializeAppCheck(app, {
-      provider: new ReCaptchaV3Provider(recaptchaSiteKey),
-      isTokenAutoRefreshEnabled: true,
-    });
-  } else {
-    console.warn(
-      "VITE_RECAPTCHA_V3_SITE_KEY is missing. Firebase App Check is disabled.",
-    );
-  }
-
-  auth = getAuth(app);
   db = getFirestore(app);
-  googleProvider = new GoogleAuthProvider();
 } else {
   console.warn(
     "Firebase config is missing. Running in local-only mode until VITE_FIREBASE_* env vars are provided.",
   );
 }
 
-export { auth, db, googleProvider };
+async function loadFirebaseAuth() {
+  if (!hasFirebaseConfig || !app) {
+    return null;
+  }
+
+  if (!isAppCheckInitialized) {
+    if (hasRecaptchaSiteKey) {
+      initializeAppCheck(app, {
+        provider: new ReCaptchaV3Provider(recaptchaSiteKey),
+        isTokenAutoRefreshEnabled: true,
+      });
+    } else {
+      console.warn(
+        "VITE_RECAPTCHA_V3_SITE_KEY is missing. Firebase App Check is disabled.",
+      );
+    }
+
+    isAppCheckInitialized = true;
+  }
+
+  if (!authDependenciesPromise) {
+    authDependenciesPromise = import("firebase/auth")
+      .then((authModule) => {
+        auth = authModule.getAuth(app);
+
+        return {
+          auth,
+          googleProvider: new authModule.GoogleAuthProvider(),
+          onAuthStateChanged: authModule.onAuthStateChanged,
+          signInWithPopup: authModule.signInWithPopup,
+          signOut: authModule.signOut,
+        };
+      })
+      .catch((error) => {
+        authDependenciesPromise = null;
+        console.error("Failed to lazy-load Firebase Authentication:", error);
+        return null;
+      });
+  }
+
+  return authDependenciesPromise;
+}
+
+export { db, loadFirebaseAuth };

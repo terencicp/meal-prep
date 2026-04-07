@@ -32,6 +32,7 @@ export default function PlannerTab({
   carbsPct,
   fatsPct,
   proteinPct,
+  activeMealPlanName,
   authControls,
 }) {
   const handleSelectInputContent = (event) => {
@@ -247,7 +248,14 @@ export default function PlannerTab({
         ))}
       </div>
 
-      <div className='w-full flex justify-center'>{authControls}</div>
+      <div className='w-full flex flex-col items-center gap-2'>
+        {activeMealPlanName && (
+          <p className='text-base font-semibold text-green-700 pb-1'>
+            Meal plan: {activeMealPlanName}
+          </p>
+        )}
+        <div className='w-full flex justify-center'>{authControls}</div>
+      </div>
     </div>
   );
 }

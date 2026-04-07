@@ -1,8 +1,14 @@
 import React from "react";
 import { Calculator, ShoppingCart, Leaf, ChefHat } from "lucide-react";
 
-export default function Header({ activeTab, setActiveTab, isLoggedIn }) {
-  const brandColorClass = isLoggedIn ? "text-green-600" : "text-slate-700";
+export default function Header({
+  activeTab,
+  setActiveTab,
+  isLoggedIn,
+  hasActiveSavedPlan,
+}) {
+  const brandColorClass =
+    isLoggedIn && hasActiveSavedPlan ? "text-green-600" : "text-slate-700";
 
   return (
     <header className='bg-white border-b sticky top-0 z-10 shadow-sm'>
