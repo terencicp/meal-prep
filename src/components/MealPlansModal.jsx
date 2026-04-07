@@ -142,6 +142,10 @@ export default function MealPlansModal({
             {sortedPlans.map((plan) => {
               const isPendingDelete = pendingDeleteId === plan.id;
               const isActive = activePlanId === plan.id;
+              const kcalLabel = `${Math.round(plan.totalKcal || 0)}Kcal`;
+              const kcalPillClass = isActive
+                ? "bg-green-100 border-green-200 text-green-800"
+                : "bg-slate-100 border-slate-200 text-slate-700";
 
               return (
                 <button
@@ -156,51 +160,59 @@ export default function MealPlansModal({
                         : "bg-white border-slate-200 hover:bg-slate-50"
                   }`}
                 >
-                  <div className='flex items-start sm:items-center justify-between gap-3'>
+                  <div className='flex items-center justify-between gap-3'>
                     <div>
                       <div className='text-lg md:text-base font-bold text-slate-800 leading-tight'>
-                        {plan.name} ({Math.round(plan.totalKcal || 0)}Kcal)
+                        {plan.name}
                       </div>
                       <div className='text-xs text-slate-500 mt-1'>
                         {formatCreatedAt(plan.createdAt)}
                       </div>
                     </div>
 
-                    {!isPendingDelete ? (
+                    <div className='flex items-center gap-2 sm:gap-3 shrink-0'>
                       <span
-                        role='button'
-                        tabIndex={0}
-                        onClick={(event) => handleDeleteClick(event, plan.id)}
-                        onKeyDown={(event) => {
-                          if (event.key === "Enter" || event.key === " ") {
-                            handleDeleteClick(event, plan.id);
-                          }
-                        }}
-                        className='p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100'
-                        aria-label={`Delete ${plan.name}`}
+                        className={`px-3 py-1 rounded-full border text-xs font-semibold ${kcalPillClass}`}
                       >
-                        <Trash2 className='w-5 h-5' />
+                        {kcalLabel}
                       </span>
-                    ) : (
-                      <div className='hidden sm:flex items-center gap-3'>
-                        <button
-                          type='button'
-                          onClick={handleDeleteCancel}
-                          className='px-4 py-2.5 rounded-lg border border-slate-300 text-slate-600 hover:bg-slate-100 text-xs font-semibold'
+
+                      {!isPendingDelete ? (
+                        <span
+                          role='button'
+                          tabIndex={0}
+                          onClick={(event) => handleDeleteClick(event, plan.id)}
+                          onKeyDown={(event) => {
+                            if (event.key === "Enter" || event.key === " ") {
+                              handleDeleteClick(event, plan.id);
+                            }
+                          }}
+                          className='p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100'
+                          aria-label={`Delete ${plan.name}`}
                         >
-                          Cancel
-                        </button>
-                        <button
-                          type='button'
-                          onClick={(event) =>
-                            void handleDeleteConfirm(event, plan.id)
-                          }
-                          className='px-4 py-2.5 rounded-lg bg-red-600 text-white hover:bg-red-700 text-xs font-semibold'
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    )}
+                          <Trash2 className='w-5 h-5' />
+                        </span>
+                      ) : (
+                        <div className='hidden sm:flex items-center gap-3'>
+                          <button
+                            type='button'
+                            onClick={handleDeleteCancel}
+                            className='px-4 py-2.5 rounded-lg border border-slate-300 text-slate-600 hover:bg-slate-100 text-xs font-semibold'
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            type='button'
+                            onClick={(event) =>
+                              void handleDeleteConfirm(event, plan.id)
+                            }
+                            className='px-4 py-2.5 rounded-lg bg-red-600 text-white hover:bg-red-700 text-xs font-semibold'
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </div>
 
                   {isPendingDelete && (
