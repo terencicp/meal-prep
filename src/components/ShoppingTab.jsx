@@ -72,26 +72,26 @@ export default function ShoppingTab({
                 <div
                   key={item.id}
                   onClick={() => toggleShoppingItem(item.id)}
-                  className={`flex items-center justify-between px-4 py-4 cursor-pointer border-b-4 border-black transition-colors ${
+                  className={`flex items-center justify-between px-4 py-2.5 cursor-pointer border-b-4 border-black transition-colors ${
                     isChecked
                       ? "bg-white opacity-60"
                       : "bg-[#FFFBE6] hover:bg-[#FFF176]"
                   }`}
                 >
-                  <div className='flex items-center space-x-4'>
+                  <div className='flex items-center space-x-3'>
                     {isChecked ? (
                       <CheckCircle2
-                        className='w-6 h-6 text-black'
+                        className='w-5 h-5 text-black'
                         strokeWidth={2.8}
                       />
                     ) : (
                       <Circle
-                        className='w-6 h-6 text-black'
+                        className='w-5 h-5 text-black'
                         strokeWidth={2.8}
                       />
                     )}
                     <span
-                      className={`text-lg font-black uppercase tracking-wide ${
+                      className={`text-base font-black uppercase tracking-wide ${
                         isChecked
                           ? "line-through decoration-[3px] decoration-black text-black"
                           : "text-black"
@@ -101,7 +101,7 @@ export default function ShoppingTab({
                     </span>
                   </div>
                   <span
-                    className={`text-xl font-black ${
+                    className={`text-lg font-black ${
                       isChecked
                         ? "line-through decoration-[3px] decoration-black text-black"
                         : "text-black"
