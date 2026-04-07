@@ -43,19 +43,23 @@ export default function ShoppingTab({
   setActiveTab,
 }) {
   return (
-    <div className='max-w-lg mx-auto space-y-6 px-3 sm:px-0'>
-      <div className='bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden'>
-        <div className='bg-slate-50 px-6 py-4 border-b border-slate-200'>
-          <h3 className='font-bold text-slate-800'>Shopping list</h3>
+    <div className='w-full max-w-md mx-auto space-y-5 px-3 sm:px-0'>
+      <div className='bg-white border-4 border-black shadow-[7px_7px_0px_0px_rgba(0,0,0,1)] overflow-hidden'>
+        <div className='bg-[#FFD600] px-4 py-4 border-b-4 border-black'>
+          <h3 className='font-black uppercase tracking-wide text-black'>
+            Shopping List
+          </h3>
         </div>
-        <div className='divide-y divide-slate-100'>
+        <div className='p-0'>
           {shoppingList.length === 0 ? (
-            <div className='p-8 text-center text-slate-500'>
-              <ShoppingCart className='w-12 h-12 mx-auto mb-3 text-slate-300' />
-              <p>Your meal planner is empty.</p>
+            <div className='px-6 py-10 text-center text-black'>
+              <ShoppingCart className='w-12 h-12 mx-auto mb-3 text-black' />
+              <p className='font-bold uppercase tracking-wide text-sm'>
+                Your meal planner is empty.
+              </p>
               <button
                 onClick={() => setActiveTab("planner")}
-                className='mt-4 text-green-600 font-medium hover:underline'
+                className='mt-5 px-4 py-2 border-4 border-black bg-white text-black font-black uppercase tracking-wide hover:bg-[#FFF176] transition-colors'
               >
                 Go add some meals
               </button>
@@ -68,26 +72,40 @@ export default function ShoppingTab({
                 <div
                   key={item.id}
                   onClick={() => toggleShoppingItem(item.id)}
-                  className={`flex items-center justify-between px-6 py-4 cursor-pointer transition-colors hover:bg-slate-50 ${isChecked ? "opacity-50" : ""}`}
+                  className={`flex items-center justify-between px-4 py-4 cursor-pointer border-b-4 border-black transition-colors ${
+                    isChecked
+                      ? "bg-white opacity-60"
+                      : "bg-[#FFFBE6] hover:bg-[#FFF176]"
+                  }`}
                 >
                   <div className='flex items-center space-x-4'>
                     {isChecked ? (
                       <CheckCircle2
-                        className={`w-6 h-6 ${item.iconColor} opacity-60`}
+                        className='w-6 h-6 text-black'
+                        strokeWidth={2.8}
                       />
                     ) : (
                       <Circle
-                        className={`w-6 h-6 ${item.iconColor} opacity-50`}
+                        className='w-6 h-6 text-black'
+                        strokeWidth={2.8}
                       />
                     )}
                     <span
-                      className={`text-lg font-medium ${isChecked ? "line-through text-slate-500" : "text-slate-800"}`}
+                      className={`text-lg font-black uppercase tracking-wide ${
+                        isChecked
+                          ? "line-through decoration-[3px] decoration-black text-black"
+                          : "text-black"
+                      }`}
                     >
                       {item.name}
                     </span>
                   </div>
                   <span
-                    className={`text-xl font-bold ${isChecked ? "line-through text-slate-400" : "text-slate-700"}`}
+                    className={`text-xl font-black ${
+                      isChecked
+                        ? "line-through decoration-[3px] decoration-black text-black"
+                        : "text-black"
+                    }`}
                   >
                     {formattedAmount.value}
                     {formattedAmount.unit ? (
@@ -103,30 +121,33 @@ export default function ShoppingTab({
         </div>
       </div>
 
-      <div className='bg-white rounded-2xl shadow-sm border border-slate-200 p-6'>
+      <div className='bg-white border-4 border-black shadow-[7px_7px_0px_0px_rgba(0,0,0,1)] p-4 sm:p-5'>
         <div className='flex flex-col sm:flex-row sm:items-center justify-between gap-4'>
           <div>
-            <h2 className='text-lg font-bold text-slate-800 flex items-center'>
-              <CalendarDays className='w-5 h-5 mr-2 text-green-600' />
+            <h2 className='text-lg font-black uppercase tracking-wide text-black flex items-center'>
+              <CalendarDays
+                className='w-5 h-5 mr-2 text-black'
+                strokeWidth={2.8}
+              />
               Days
             </h2>
-            <p className='text-sm text-slate-500 mt-1'>
+            <p className='text-sm text-black mt-1 font-bold'>
               How many days are you shopping for?
             </p>
           </div>
-          <div className='flex items-center bg-slate-100 rounded-lg p-1 w-fit'>
+          <div className='flex items-center p-1 w-fit'>
             <button
               onClick={() => setPrepDays(Math.max(1, prepDays - 1))}
-              className='w-10 h-10 flex items-center justify-center rounded-md bg-white shadow-sm text-slate-600 hover:text-slate-900'
+              className='w-10 h-10 flex items-center justify-center border-4 border-black bg-white text-black font-black text-xl hover:bg-[#FFF176] transition-colors'
             >
               -
             </button>
-            <span className='w-16 text-center font-bold text-lg'>
+            <span className='w-12 text-center font-black text-xl text-black'>
               {prepDays}
             </span>
             <button
               onClick={() => setPrepDays(prepDays + 1)}
-              className='w-10 h-10 flex items-center justify-center rounded-md bg-white shadow-sm text-slate-600 hover:text-slate-900'
+              className='w-10 h-10 flex items-center justify-center border-4 border-black bg-white text-black font-black text-xl hover:bg-[#FFF176] transition-colors'
             >
               +
             </button>
@@ -134,7 +155,7 @@ export default function ShoppingTab({
         </div>
       </div>
 
-      <p className='text-xs text-slate-400 text-center px-2'>
+      <p className='text-xs text-slate-500 text-center px-2 font-bold'>
         A yogurt is 120 grams, an egg is 50 grams.
       </p>
     </div>

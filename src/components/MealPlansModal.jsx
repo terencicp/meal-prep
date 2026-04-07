@@ -77,19 +77,19 @@ export default function MealPlansModal({
       <button
         type='button'
         aria-label='Close meal plans modal background'
-        className='absolute inset-0 bg-gray-900/70'
+        className='absolute inset-0 bg-black/85'
         onClick={handleBackdropClick}
       />
 
-      <div className='relative z-10 w-full max-w-xl bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden'>
-        <div className='flex items-start justify-between p-4 sm:p-5 border-b border-slate-200'>
-          <h2 className='text-lg sm:text-xl font-bold tracking-tight text-slate-800'>
+      <div className='relative z-10 w-full max-w-2xl bg-white border-4 border-black shadow-[9px_9px_0px_0px_rgba(0,0,0,1)] overflow-hidden'>
+        <div className='flex items-start justify-between px-4 py-4 sm:px-6 sm:py-5 border-b-4 border-black bg-[#FFD600]'>
+          <h2 className='text-xl sm:text-2xl font-black uppercase tracking-wide text-black'>
             Your meal plans
           </h2>
           <button
             type='button'
             onClick={onClose}
-            className='text-slate-400 hover:text-slate-600 transition-colors'
+            className='border-4 border-black bg-white p-1 text-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-transform hover:translate-x-px hover:translate-y-px disabled:opacity-50 disabled:cursor-not-allowed'
             aria-label='Close meal plans modal'
             disabled={!canClose}
           >
@@ -97,8 +97,8 @@ export default function MealPlansModal({
           </button>
         </div>
 
-        <div className='p-4 sm:p-5 border-b border-slate-200'>
-          <h3 className='text-sm font-bold text-slate-700 mb-2.5'>
+        <div className='px-4 py-4 sm:px-6 sm:py-5 border-b-4 border-black bg-white'>
+          <h3 className='text-sm md:text-base font-black uppercase tracking-wide text-black mb-2.5'>
             Save current plan
           </h3>
           <form
@@ -112,27 +112,27 @@ export default function MealPlansModal({
               value={planNameInput}
               onChange={(event) => setPlanNameInput(event.target.value)}
               placeholder='Plan name'
-              className='flex-1 px-4 py-2.5 rounded-xl border border-slate-300 bg-slate-50 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-green-500'
+              className='flex-1 px-3 py-2.5 border-4 border-black bg-white text-sm md:text-base font-bold text-black placeholder:text-slate-500 focus:outline-none focus:bg-[#FFD600]'
               maxLength={70}
             />
             <button
               type='submit'
               disabled={isPlansLoading}
-              className='px-6 py-2.5 rounded-xl bg-green-600 hover:bg-green-700 disabled:bg-green-300 text-white text-sm font-bold tracking-wide transition-colors'
+              className='px-6 py-2.5 border-4 border-black bg-black text-white text-sm md:text-base font-black uppercase tracking-wide shadow-[4px_4px_0px_0px_#FFD600] transition-transform hover:translate-x-px hover:translate-y-px disabled:opacity-60 disabled:cursor-not-allowed'
             >
               SAVE
             </button>
           </form>
         </div>
 
-        <div className='p-4 sm:p-5'>
-          <h3 className='text-sm font-bold text-slate-700 mb-3'>
+        <div className='px-4 py-4 sm:px-6 sm:py-5 bg-[#F7F7F7]'>
+          <h3 className='text-sm md:text-base font-black uppercase tracking-wide text-black mb-3'>
             Load saved plan
           </h3>
 
           <div className='max-h-90 overflow-y-auto pr-1 space-y-3'>
             {sortedPlans.length === 0 && (
-              <div className='rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-500'>
+              <div className='border-4 border-black bg-white p-4 text-sm font-bold text-black'>
                 {isInitialPlanSetupRequired
                   ? "Save your first meal plan to get started."
                   : "No meal plans found."}
@@ -144,35 +144,33 @@ export default function MealPlansModal({
               const isActive = activePlanId === plan.id;
               const kcalLabel = `${Math.round(plan.totalKcal || 0)}Kcal`;
               const kcalPillClass = isActive
-                ? "bg-green-100 border-green-200 text-green-800"
-                : "bg-slate-100 border-slate-200 text-slate-700";
+                ? "bg-[#FFD600] text-black"
+                : "bg-white text-black";
 
               return (
                 <button
                   type='button'
                   key={plan.id}
                   onClick={() => handleCardClick(plan.id)}
-                  className={`w-full text-left rounded-xl border p-3.5 sm:p-4 transition-colors ${
-                    isPendingDelete
-                      ? "bg-red-50 border-red-200"
-                      : isActive
-                        ? "bg-green-50 border-green-300"
-                        : "bg-white border-slate-200 hover:bg-slate-50"
+                  className={`w-full text-left border-4 p-3.5 sm:p-4 transition-colors shadow-[5px_5px_0px_0px_rgba(0,0,0,1)] ${
+                    isActive
+                      ? "bg-[#FFD600] border-black"
+                      : "bg-white border-black hover:bg-[#F2F2F2]"
                   }`}
                 >
                   <div className='flex items-center justify-between gap-3'>
                     <div>
-                      <div className='text-lg md:text-base font-bold text-slate-800 leading-tight'>
+                      <div className='text-lg md:text-xl font-black uppercase tracking-wide text-black leading-tight'>
                         {plan.name}
                       </div>
-                      <div className='text-xs text-slate-500 mt-1'>
+                      <div className='text-xs md:text-sm font-bold text-black/70 mt-1'>
                         {formatCreatedAt(plan.createdAt)}
                       </div>
                     </div>
 
                     <div className='flex items-center gap-2 sm:gap-3 shrink-0'>
                       <span
-                        className={`px-3 py-1 rounded-full border text-xs font-semibold ${kcalPillClass}`}
+                        className={`h-10 px-3 inline-flex items-center border-2 border-black text-xs md:text-sm font-black uppercase tracking-wide ${kcalPillClass}`}
                       >
                         {kcalLabel}
                       </span>
@@ -187,7 +185,7 @@ export default function MealPlansModal({
                               handleDeleteClick(event, plan.id);
                             }
                           }}
-                          className='p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100'
+                          className='p-1.5 border-2 border-black bg-white text-black hover:bg-[#FF2A5F] hover:text-white'
                           aria-label={`Delete ${plan.name}`}
                         >
                           <Trash2 className='w-5 h-5' />
@@ -197,7 +195,7 @@ export default function MealPlansModal({
                           <button
                             type='button'
                             onClick={handleDeleteCancel}
-                            className='px-4 py-2.5 rounded-lg border border-slate-300 text-slate-600 hover:bg-slate-100 text-xs font-semibold'
+                            className='px-4 py-2.5 border-4 border-black bg-white text-black hover:bg-[#F2F2F2] text-xs font-black uppercase tracking-wide'
                           >
                             Cancel
                           </button>
@@ -206,7 +204,7 @@ export default function MealPlansModal({
                             onClick={(event) =>
                               void handleDeleteConfirm(event, plan.id)
                             }
-                            className='px-4 py-2.5 rounded-lg bg-red-600 text-white hover:bg-red-700 text-xs font-semibold'
+                            className='px-4 py-2.5 border-4 border-black bg-[#FF2A5F] text-white hover:bg-[#E6003D] text-xs font-black uppercase tracking-wide'
                           >
                             Delete
                           </button>
@@ -220,7 +218,7 @@ export default function MealPlansModal({
                       <button
                         type='button'
                         onClick={handleDeleteCancel}
-                        className='px-4 py-2.5 rounded-lg border border-slate-300 text-slate-600 hover:bg-slate-100 text-xs font-semibold'
+                        className='px-4 py-2.5 border-4 border-black bg-white text-black hover:bg-[#F2F2F2] text-xs font-black uppercase tracking-wide'
                       >
                         Cancel
                       </button>
@@ -229,7 +227,7 @@ export default function MealPlansModal({
                         onClick={(event) =>
                           void handleDeleteConfirm(event, plan.id)
                         }
-                        className='px-4 py-2.5 rounded-lg bg-red-600 text-white hover:bg-red-700 text-xs font-semibold'
+                        className='px-4 py-2.5 border-4 border-black bg-[#FF2A5F] text-white hover:bg-[#E6003D] text-xs font-black uppercase tracking-wide'
                       >
                         Delete
                       </button>
