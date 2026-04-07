@@ -161,15 +161,15 @@ export default function App() {
   const authControls = !user ? (
     <button
       onClick={handleSaveClick}
-      className='px-4 py-2 rounded-lg text-sm font-medium bg-green-600 text-white hover:bg-green-700 transition-colors'
+      className='px-5 py-2.5 border-4 border-black bg-[#FFD600] text-black text-sm font-black uppercase tracking-wide shadow-[5px_5px_0px_0px_rgba(0,0,0,1)] active:translate-x-1 active:translate-y-1 active:shadow-none transition-all'
     >
       Sync with Google
     </button>
   ) : (
-    <div className='flex items-center space-x-2'>
+    <div className='flex items-center gap-3 flex-wrap justify-center0'>
       <button
         onClick={() => setIsMealPlansModalVisible(true)}
-        className='min-w-30 py-2 rounded-lg text-sm font-medium bg-white border border-slate-300 text-slate-700 hover:bg-slate-100 transition-colors'
+        className='w-32.5 sm:w-40 px-4 py-2 border-4 border-black bg-white text-black text-xs sm:text-sm font-black uppercase tracking-wide shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] active:translate-x-0.75 active:translate-y-0.75 active:shadow-none transition-all'
       >
         {hasActiveSavedPlan ? "Switch plan" : "Save plan"}
       </button>
@@ -177,16 +177,16 @@ export default function App() {
         <img
           src={user.photoURL}
           alt='Profile'
-          className='w-8 h-8 rounded-full object-cover border border-slate-200'
+          className='w-11 h-11 rounded-full object-cover border-4 border-black mx-1'
         />
       ) : (
-        <div className='w-8 h-8 rounded-full bg-slate-200 text-slate-700 text-xs font-bold flex items-center justify-center border border-slate-300'>
+        <div className='w-11 h-11 rounded-full bg-slate-200 text-slate-700 text-sm font-black flex items-center justify-center border-4 border-black mx-1'>
           {(user.displayName?.[0] || user.email?.[0] || "U").toUpperCase()}
         </div>
       )}
       <button
         onClick={handleSignOut}
-        className='min-w-30 py-2 rounded-lg text-sm font-medium bg-white border border-slate-300 text-slate-700 hover:bg-slate-100 transition-colors'
+        className='w-32.5 sm:w-40 px-4 py-2 border-4 border-black bg-white text-black text-xs sm:text-sm font-black uppercase tracking-wide shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] active:translate-x-0.75 active:translate-y-0.75 active:shadow-none transition-all'
       >
         Sign out
       </button>
@@ -195,7 +195,7 @@ export default function App() {
 
   // --- RENDERERS ---
   return (
-    <div className='min-h-screen bg-slate-50 text-slate-800 font-sans pb-20'>
+    <div className='min-h-screen bg-[#EFEFEF] text-slate-800 font-sans pb-20'>
       <Header
         activeTab={activeTab}
         setActiveTab={setActiveTab}
@@ -203,7 +203,11 @@ export default function App() {
         hasActiveSavedPlan={hasActiveSavedPlan}
       />
 
-      <main className='max-w-5xl mx-auto px-4 sm:px-6 py-8'>
+      <main
+        className={`max-w-5xl mx-auto px-4 sm:px-6 pb-8 ${
+          activeTab === "planner" ? "pt-6" : "pt-8"
+        }`}
+      >
         {activeTab === "prepare" && (
           <PrepareMealTab
             meals={meals}

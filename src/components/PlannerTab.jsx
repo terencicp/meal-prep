@@ -1,18 +1,17 @@
 import React from "react";
-import { Utensils } from "lucide-react";
 import { FOOD_GROUPS, MEAL_NAMES } from "../data/constants";
 
-const MacroBadge = ({ label, value, colorClass }) => (
+const MacroBadge = ({ label, value, colorClass, textClass = "text-black" }) => (
   <div
-    className={`flex flex-col items-center justify-center p-2 rounded-lg ${colorClass} h-full`}
+    className={`flex flex-col items-center justify-center px-3 py-2 md:py-3 border-4 border-black shadow-[5px_5px_0px_0px_rgba(0,0,0,1)] ${colorClass} ${textClass}`}
   >
-    <span className='text-sm md:text-xs font-semibold uppercase tracking-wider opacity-70 mb-1'>
+    <span className='text-xs font-black uppercase tracking-wide mb-1'>
       {label}
     </span>
-    <span className='text-xl md:text-lg font-bold leading-none flex items-baseline'>
+    <span className='text-2xl md:text-2xl font-black leading-none flex items-baseline'>
       {Math.round(value)}
       {!label.includes("kCal") && (
-        <span className='text-base md:text-sm font-normal ml-0.5'>g</span>
+        <span className='text-sm md:text-sm font-bold ml-1'>g</span>
       )}
     </span>
   </div>
@@ -43,17 +42,17 @@ export default function PlannerTab({
   };
 
   return (
-    <div className='space-y-8 flex flex-col items-center'>
-      <div className='bg-white w-full rounded-2xl shadow-sm border border-slate-100 p-6'>
-        <div className='mb-4'>
-          <h2 className='text-base md:text-sm font-bold text-slate-600 uppercase tracking-wider'>
+    <div className='space-y-8 w-full'>
+      <div className='bg-white w-full border-4 border-black px-4 pb-4 pt-3 md:px-7 md:pb-7 md:pt-5 shadow-[7px_7px_0px_0px_rgba(0,0,0,1)]'>
+        <div className='mb-3 md:mb-5'>
+          <h2 className='text-2xl md:text-2xl font-black uppercase tracking-wide'>
             Daily totals
           </h2>
         </div>
 
-        <div className='grid grid-cols-2 md:grid-cols-5 gap-4 mb-6'>
-          <div className='flex flex-col items-center justify-center p-2 rounded-lg bg-slate-500 shadow-sm border border-slate-500'>
-            <span className='text-sm md:text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1'>
+        <div className='grid grid-cols-2 md:grid-cols-5 gap-3 md:gap-5 mb-4 md:mb-8'>
+          <div className='col-span-2 md:col-span-1 bg-black text-white border-4 border-black px-3 py-2 md:py-3 shadow-[5px_5px_0px_0px_#FFD600]'>
+            <span className='text-xs font-black uppercase tracking-wide mb-1 block text-center'>
               kCal Goal
             </span>
             <input
@@ -63,45 +62,49 @@ export default function PlannerTab({
               onChange={(e) => setCalorieGoal(Number(e.target.value))}
               onFocus={handleSelectInputContent}
               onClick={handleSelectInputContent}
-              className='w-20 text-center px-1 py-0.5 rounded bg-white text-xl md:text-lg font-bold text-slate-800 focus:ring-2 focus:ring-green-500 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none'
+              className='w-full text-center px-2 py-1 border-4 border-black bg-white text-2xl md:text-xl font-black text-black focus:outline-none focus:bg-[#FFD600] focus:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none'
             />
           </div>
           <MacroBadge
             label='kCal Meals'
             value={dailyTotals.kCal}
-            colorClass='bg-slate-100 text-slate-800'
+            colorClass='bg-white'
           />
           <MacroBadge
             label='Carbs'
             value={dailyTotals.carbs}
-            colorClass='bg-blue-50 text-blue-800'
+            colorClass='bg-[#0055FF]'
+            textClass='text-white'
           />
           <MacroBadge
             label='Fats'
             value={dailyTotals.fats}
-            colorClass='bg-green-50 text-green-800'
+            colorClass='bg-[#00E676]'
           />
           <MacroBadge
             label='Protein'
             value={dailyTotals.protein}
-            colorClass='bg-rose-50 text-rose-800'
+            colorClass='bg-[#FF2A5F]'
+            textClass='text-white'
           />
         </div>
 
-        <div className='grid grid-cols-1 md:grid-cols-2 gap-8 pt-4 border-t border-slate-100'>
+        <div className='grid grid-cols-1 md:grid-cols-2 gap-0 md:gap-8'>
           <div>
-            <div className='flex justify-between text-sm md:text-xs mb-1.5'>
-              <span className='font-bold text-slate-700'>Calories</span>
+            <div className='flex justify-between text-base md:text-sm mb-0 md:mb-2'>
+              <span className='font-black uppercase tracking-wide'>
+                Calories
+              </span>
             </div>
-            <div className='h-3 w-full bg-slate-100 rounded-full overflow-hidden flex border border-slate-300'>
+            <div className='h-8 w-full bg-white overflow-hidden flex border-4 border-black'>
               <div
-                className={`h-full transition-all duration-500 ${isOutsideTolerance ? "bg-orange-400" : "bg-slate-500"}`}
+                className={`h-full border-r-4 border-black transition-all duration-500 ${isOutsideTolerance ? "bg-[#FFD600]" : "bg-black"}`}
                 style={{ width: `${kcalPct}%` }}
               ></div>
             </div>
-            <div className='flex justify-start mt-1.5'>
+            <div className='hidden md:flex justify-start mt-1 md:mt-2'>
               <span
-                className={`text-sm md:text-xs font-medium ${isOutsideTolerance ? "text-orange-500" : "text-slate-500"}`}
+                className={`text-sm md:text-xs font-black uppercase tracking-wide ${isOutsideTolerance ? "text-[#B29500]" : "text-slate-600"}`}
               >
                 {absKcalDiff === 0
                   ? "Exact goal reached"
@@ -110,30 +113,32 @@ export default function PlannerTab({
             </div>
           </div>
 
-          <div>
-            <div className='flex justify-between text-sm md:text-xs mb-1.5'>
-              <span className='font-bold text-slate-700'>Macronutrients</span>
+          <div className='mt-2 md:mt-0'>
+            <div className='flex justify-between text-base md:text-sm mb-0 md:mb-2'>
+              <span className='font-black uppercase tracking-wide'>
+                Macronutrients
+              </span>
             </div>
-            <div className='h-3 w-full bg-slate-100 rounded-full overflow-hidden flex'>
+            <div className='h-8 w-full bg-white overflow-hidden flex border-4 border-black'>
               <div
-                className='h-full bg-blue-300 transition-all duration-500'
+                className='h-full bg-[#0055FF] border-r-4 border-black transition-all duration-500'
                 style={{ width: `${carbsPct}%` }}
                 title={`Carbs: ${Math.round(carbsPct)}%`}
               ></div>
               <div
-                className='h-full bg-green-300 transition-all duration-500'
+                className='h-full bg-[#00E676] border-r-4 border-black transition-all duration-500'
                 style={{ width: `${fatsPct}%` }}
                 title={`Fats: ${Math.round(fatsPct)}%`}
               ></div>
               <div
-                className='h-full bg-rose-300 transition-all duration-500'
+                className='h-full bg-[#FF2A5F] transition-all duration-500'
                 style={{ width: `${proteinPct}%` }}
                 title={`Protein: ${Math.round(proteinPct)}%`}
               ></div>
             </div>
-            <div className='flex justify-between text-sm md:text-xs mt-1.5 px-1'>
+            <div className='hidden md:flex justify-between text-sm md:text-xs mt-1 md:mt-2'>
               <div className='flex items-center'>
-                <span className='font-medium text-blue-700'>
+                <span className='font-black uppercase text-[#0055FF]'>
                   <span className='sm:hidden'>C: {Math.round(carbsPct)}%</span>
                   <span className='hidden sm:inline'>
                     {Math.round(carbsPct)}% Carbs
@@ -141,7 +146,7 @@ export default function PlannerTab({
                 </span>
               </div>
               <div className='flex items-center'>
-                <span className='font-medium text-green-700'>
+                <span className='font-black uppercase text-[#00994D]'>
                   <span className='sm:hidden'>F: {Math.round(fatsPct)}%</span>
                   <span className='hidden sm:inline'>
                     {Math.round(fatsPct)}% Fats
@@ -149,7 +154,7 @@ export default function PlannerTab({
                 </span>
               </div>
               <div className='flex items-center'>
-                <span className='font-medium text-rose-700/90'>
+                <span className='font-black uppercase text-[#FF2A5F]'>
                   <span className='sm:hidden'>
                     P: {Math.round(proteinPct)}%
                   </span>
@@ -164,93 +169,90 @@ export default function PlannerTab({
       </div>
 
       <div className='grid grid-cols-1 md:grid-cols-3 gap-6 w-full'>
-        {MEAL_NAMES.map((meal) => (
-          <div
-            key={meal}
-            className='bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col'
-          >
-            <div className='bg-slate-50 p-4 border-b border-slate-100 flex items-center justify-between'>
-              <h3 className='font-bold text-xl md:text-lg text-slate-800 flex items-center'>
-                <Utensils className='w-4 h-4 mr-2 text-slate-400' />
-                {meal}
-              </h3>
-            </div>
+        {MEAL_NAMES.map((meal) => {
+          const mealCarbs = Math.max(0, mealTotals[meal].carbs);
+          const mealFats = Math.max(0, mealTotals[meal].fats);
+          const mealProtein = Math.max(0, mealTotals[meal].protein);
+          const totalMacros = Math.max(1, mealCarbs + mealFats + mealProtein);
 
-            <div className='flex items-center justify-between px-4 py-3 bg-white border-b border-slate-50 text-sm md:text-xs font-medium text-slate-500'>
-              <span className='text-slate-800 font-bold text-lg md:text-base'>
-                {Math.round(mealTotals[meal].kCal)} kcal
-              </span>
-              <div className='flex items-center space-x-3'>
-                <span className='text-blue-700'>
-                  C: {Math.round(mealTotals[meal].carbs)}
-                </span>
-                <span className='text-green-700'>
-                  F: {Math.round(mealTotals[meal].fats)}
-                </span>
-                <span className='text-rose-700'>
-                  P: {Math.round(mealTotals[meal].protein)}
-                </span>
+          return (
+            <div
+              key={meal}
+              className='bg-white border-4 border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] overflow-hidden flex flex-col'
+            >
+              <div className='border-b-4 border-black px-4 py-4 bg-[#FFD600]'>
+                <div className='mb-1'>
+                  <h3 className='font-black text-2xl md:text-2xl uppercase tracking-wide'>
+                    {meal}
+                  </h3>
+                </div>
+
+                <div className='flex items-center justify-between mt-2'>
+                  <span className='font-black text-2xl md:text-2xl leading-none'>
+                    {Math.round(mealTotals[meal].kCal)}
+                    <span className='text-base md:text-base ml-1'>kcal</span>
+                  </span>
+                  <div className='h-4 w-24 bg-white border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] overflow-hidden flex'>
+                    <div
+                      className='h-full bg-[#0055FF] border-r-2 border-black'
+                      style={{ width: `${(mealCarbs / totalMacros) * 100}%` }}
+                    ></div>
+                    <div
+                      className='h-full bg-[#00E676] border-r-2 border-black'
+                      style={{ width: `${(mealFats / totalMacros) * 100}%` }}
+                    ></div>
+                    <div
+                      className='h-full bg-[#FF2A5F]'
+                      style={{ width: `${(mealProtein / totalMacros) * 100}%` }}
+                    ></div>
+                  </div>
+                </div>
               </div>
-            </div>
 
-            <div className='p-2 space-y-1'>
-              {FOOD_GROUPS.map((food) => {
-                const grams = meals[meal]?.[food.id] || "";
-                const isActive = grams > 0;
+              <div className='px-4 py-3 space-y-2'>
+                {FOOD_GROUPS.map((food) => {
+                  const grams = meals[meal]?.[food.id] || "";
+                  const isActive = grams > 0;
 
-                return (
-                  <div
-                    key={food.id}
-                    className={`flex items-center justify-between p-2 rounded-xl transition-all ${
-                      isActive
-                        ? "bg-slate-50 border border-slate-100"
-                        : "hover:bg-slate-50 border border-transparent"
-                    }`}
-                  >
-                    <div className='flex items-center space-x-3'>
-                      <div
-                        className={`w-3 h-3 rounded-full ${food.color} shadow-sm border border-white`}
-                      ></div>
-                      <span
-                        className={`text-base md:text-sm font-medium ${isActive ? "text-slate-800" : "text-slate-500"}`}
-                      >
+                  return (
+                    <div
+                      key={food.id}
+                      className={`flex items-center justify-between text-black ${isActive ? "opacity-100" : "opacity-40 hover:opacity-80"}`}
+                    >
+                      <span className='font-bold uppercase tracking-wide text-xl md:text-xl text-black'>
                         {food.name}
                       </span>
-                    </div>
 
-                    <div className='relative flex items-center justify-end w-20'>
-                      <input
-                        type='number'
-                        min='0'
-                        step='5'
-                        value={grams}
-                        onChange={(e) =>
-                          handleGramsChange(meal, food.id, e.target.value)
-                        }
-                        onFocus={handleSelectInputContent}
-                        onClick={handleSelectInputContent}
-                        placeholder='0'
-                        className={`w-full text-right pr-6 pl-2 py-1.5 rounded-lg border text-base md:text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-green-500 transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${
-                          isActive
-                            ? "border-slate-300 bg-white text-slate-900"
-                            : "border-slate-200 bg-slate-50/50 text-slate-400"
-                        }`}
-                      />
-                      <span className='absolute right-2.5 text-sm md:text-xs text-slate-400 pointer-events-none font-medium'>
-                        g
-                      </span>
+                      <div className='relative flex items-center justify-end w-20'>
+                        <input
+                          type='number'
+                          min='0'
+                          step='5'
+                          value={grams}
+                          onChange={(e) =>
+                            handleGramsChange(meal, food.id, e.target.value)
+                          }
+                          onFocus={handleSelectInputContent}
+                          onClick={handleSelectInputContent}
+                          placeholder='0'
+                          className='w-full text-right pr-6 pl-2 py-1 border-[3px] border-black bg-white text-base md:text-lg font-bold text-black placeholder:text-black focus:outline-none focus:bg-[#FFD600] focus:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none'
+                        />
+                        <span className='absolute right-2 text-sm md:text-base text-black pointer-events-none font-bold'>
+                          g
+                        </span>
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
-      <div className='w-full flex flex-col items-center gap-2'>
+      <div className='w-full flex flex-col items-center gap-3 pt-1'>
         {activeMealPlanName && (
-          <p className='text-base font-semibold text-green-700 pb-1'>
+          <p className='text-base md:text-lg font-black uppercase tracking-wide text-black'>
             Meal plan: {activeMealPlanName}
           </p>
         )}
