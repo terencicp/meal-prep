@@ -66,6 +66,7 @@ export default function App() {
   const [checkedShoppingItems, setCheckedShoppingItems] = useState({});
   const [isMealPlansModalVisible, setIsMealPlansModalVisible] = useState(false);
   const [planNameInput, setPlanNameInput] = useState("");
+  const [brokenProfileImageUrl, setBrokenProfileImageUrl] = useState(null);
 
   const isMealPlansModalOpen = Boolean(user) && isMealPlansModalVisible;
   const hasActiveSavedPlan = Boolean(user && activePlanId);
@@ -173,10 +174,11 @@ export default function App() {
       >
         {hasActiveSavedPlan ? "Switch plan" : "Save plan"}
       </button>
-      {user.photoURL ? (
+      {user.photoURL && user.photoURL !== brokenProfileImageUrl ? (
         <img
           src={user.photoURL}
           alt='Profile'
+          onError={() => setBrokenProfileImageUrl(user.photoURL)}
           className='w-11 h-11 rounded-full object-cover border-4 border-black mx-1'
         />
       ) : (
