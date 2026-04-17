@@ -150,7 +150,7 @@ export default function PrepareMealTab({
           <button
             type='button'
             onClick={() => setIsSubstitutionMode((prev) => !prev)}
-            className={`px-5 py-2 border-4 border-black text-xs sm:text-sm font-black uppercase tracking-wide transition-colors shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-x-1 active:translate-y-1 active:shadow-none ${
+            className={`w-56 sm:w-64 px-5 py-2.5 sm:py-3 border-4 border-black text-xs sm:text-sm font-black uppercase tracking-wide transition-colors shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-x-1 active:translate-y-1 active:shadow-none ${
               isSubstitutionMode
                 ? "bg-[#FFD600] text-black"
                 : "bg-white text-black hover:bg-[#FFF176]"

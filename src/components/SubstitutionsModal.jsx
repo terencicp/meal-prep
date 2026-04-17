@@ -98,7 +98,7 @@ export default function SubstitutionsModal({
                     {row.name}
                   </p>
                   <p className='text-xs sm:text-sm font-bold text-black/70'>
-                    {row.grams} g for same calories
+                    {row.grams} g
                   </p>
                 </div>
                 <button
