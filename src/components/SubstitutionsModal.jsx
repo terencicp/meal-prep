@@ -87,7 +87,7 @@ export default function SubstitutionsModal({
         </div>
 
         <div className='px-4 py-4 sm:px-6 sm:py-5 bg-[#F7F7F7]'>
-          <div className='max-h-[24rem] overflow-y-auto space-y-2 pr-1'>
+          <div className='max-h-[22rem] sm:max-h-[24rem] overflow-y-auto space-y-2 pr-1'>
             {substitutionRows.map((row) => (
               <div
                 key={row.id}
