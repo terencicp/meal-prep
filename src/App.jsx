@@ -130,7 +130,6 @@ export default function App() {
     mealPlans,
     activePlanId,
     isPlansLoading,
-    isInitialPlanSetupRequired,
     createMealPlan,
     selectMealPlan,
     deleteMealPlan,
@@ -484,7 +483,6 @@ export default function App() {
         onClose={closeMealPlansModal}
         mealPlans={mealPlans}
         activePlanId={activePlanId}
-        isInitialPlanSetupRequired={isInitialPlanSetupRequired}
         planNameInput={planNameInput}
         setPlanNameInput={setPlanNameInput}
         isPlansLoading={isPlansLoading}

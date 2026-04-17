@@ -93,7 +93,7 @@ export default function PlannerTab({
           <div>
             <div className='flex justify-between text-base md:text-sm mb-0 md:mb-2'>
               <span className='font-black uppercase tracking-wide'>
-                Calories
+                Calorie Goal
               </span>
             </div>
             <div className='h-8 w-full bg-white overflow-hidden flex border-4 border-black'>
