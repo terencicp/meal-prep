@@ -1,7 +1,8 @@
-import React, { useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useSyncMeals } from "./hooks/useSyncMeals";
 import { useMealCalculations } from "./hooks/useMealCalculations";
 import {
+  LOCAL_STORAGE_PREP_STATE_KEY,
   LOCAL_STORAGE_MEALS_KEY,
   LOCAL_STORAGE_SETTINGS_KEY,
 } from "./data/constants";
@@ -10,6 +11,7 @@ import PrepareMealTab from "./components/PrepareMealTab";
 import PlannerTab from "./components/PlannerTab";
 import ShoppingTab from "./components/ShoppingTab";
 import MealPlansModal from "./components/MealPlansModal";
+import SubstitutionsModal from "./components/SubstitutionsModal";
 
 function getDefaultMealByLocalHour() {
   const hour = new Date().getHours();
@@ -37,6 +39,80 @@ function hasStoredPlannerData() {
   }
 }
 
+function getLocalDateKey() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function normalizePrepStateObject(value) {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? value
+    : {};
+}
+
+function loadPrepStateFromLocalStorage() {
+  const todayKey = getLocalDateKey();
+
+  try {
+    const storedPrepState = localStorage.getItem(LOCAL_STORAGE_PREP_STATE_KEY);
+    if (!storedPrepState) {
+      return {
+        dateKey: todayKey,
+        checkedItemsByMeal: {},
+        prepSubstitutionsByMeal: {},
+      };
+    }
+
+    const parsedPrepState = JSON.parse(storedPrepState);
+    if (!parsedPrepState || parsedPrepState.dateKey !== todayKey) {
+      return {
+        dateKey: todayKey,
+        checkedItemsByMeal: {},
+        prepSubstitutionsByMeal: {},
+      };
+    }
+
+    return {
+      dateKey: todayKey,
+      checkedItemsByMeal: normalizePrepStateObject(
+        parsedPrepState.checkedItemsByMeal,
+      ),
+      prepSubstitutionsByMeal: normalizePrepStateObject(
+        parsedPrepState.prepSubstitutionsByMeal,
+      ),
+    };
+  } catch (error) {
+    console.error("Failed to load prep state from localStorage:", error);
+    return {
+      dateKey: todayKey,
+      checkedItemsByMeal: {},
+      prepSubstitutionsByMeal: {},
+    };
+  }
+}
+
+function persistPrepStateToLocalStorage({
+  dateKey,
+  checkedItemsByMeal,
+  prepSubstitutionsByMeal,
+}) {
+  try {
+    localStorage.setItem(
+      LOCAL_STORAGE_PREP_STATE_KEY,
+      JSON.stringify({
+        dateKey,
+        checkedItemsByMeal,
+        prepSubstitutionsByMeal,
+      }),
+    );
+  } catch (error) {
+    console.error("Failed to save prep state to localStorage:", error);
+  }
+}
+
 export default function App() {
   const [activeTab, setActiveTab] = useState(() => {
     const hasLocalData = hasStoredPlannerData();
@@ -61,8 +137,23 @@ export default function App() {
     syncWithGoogle,
     signOutUser,
   } = useSyncMeals();
+  const initialPrepStateRef = useRef(loadPrepStateFromLocalStorage());
   const [mealToPrepare, setMealToPrepare] = useState(getDefaultMealByLocalHour);
-  const [checkedItems, setCheckedItems] = useState({});
+  const [checkedItemsByMeal, setCheckedItemsByMeal] = useState(
+    initialPrepStateRef.current.checkedItemsByMeal,
+  );
+  const [prepSubstitutionsByMeal, setPrepSubstitutionsByMeal] = useState(
+    initialPrepStateRef.current.prepSubstitutionsByMeal,
+  );
+  const [isSubstitutionMode, setIsSubstitutionMode] = useState(false);
+  const [prepStateDateKey, setPrepStateDateKey] = useState(
+    initialPrepStateRef.current.dateKey,
+  );
+  const [substitutionModalContext, setSubstitutionModalContext] = useState({
+    isOpen: false,
+    mealName: null,
+    foodId: null,
+  });
   const [checkedShoppingItems, setCheckedShoppingItems] = useState({});
   const [isMealPlansModalVisible, setIsMealPlansModalVisible] = useState(false);
   const [planNameInput, setPlanNameInput] = useState("");
@@ -74,6 +165,88 @@ export default function App() {
     user && activePlanId
       ? mealPlans.find((plan) => plan.id === activePlanId)?.name || "Meal plan"
       : null;
+  const checkedItems = checkedItemsByMeal[mealToPrepare] || {};
+  const substitutionsForMeal = prepSubstitutionsByMeal[mealToPrepare] || {};
+  const isSubstitutionModalOpen = Boolean(substitutionModalContext.isOpen);
+  const modalMealName = substitutionModalContext.mealName;
+  const modalFoodId = substitutionModalContext.foodId;
+  const modalFoodAmount =
+    modalMealName && modalFoodId ? meals[modalMealName]?.[modalFoodId] || 0 : 0;
+  const modalCurrentReplacementFoodId =
+    modalMealName && modalFoodId
+      ? prepSubstitutionsByMeal[modalMealName]?.[modalFoodId] || null
+      : null;
+
+  const closeSubstitutionModal = useCallback(() => {
+    setSubstitutionModalContext({
+      isOpen: false,
+      mealName: null,
+      foodId: null,
+    });
+  }, []);
+
+  const clearDailyPrepState = useCallback(() => {
+    setCheckedItemsByMeal({});
+    setPrepSubstitutionsByMeal({});
+    setIsSubstitutionMode(false);
+    closeSubstitutionModal();
+  }, [closeSubstitutionModal]);
+
+  const resetDailyPrepStateIfNeeded = useCallback(() => {
+    const todayKey = getLocalDateKey();
+
+    setPrepStateDateKey((currentKey) => {
+      if (currentKey === todayKey) {
+        return currentKey;
+      }
+
+      clearDailyPrepState();
+      return todayKey;
+    });
+  }, [clearDailyPrepState]);
+
+  useEffect(() => {
+    let timeoutId;
+
+    const scheduleMidnightReset = () => {
+      const now = new Date();
+      const nextMidnight = new Date(now);
+      nextMidnight.setHours(24, 0, 0, 0);
+      const delayMs = Math.max(nextMidnight.getTime() - now.getTime(), 0) + 200;
+
+      timeoutId = window.setTimeout(() => {
+        resetDailyPrepStateIfNeeded();
+        scheduleMidnightReset();
+      }, delayMs);
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        resetDailyPrepStateIfNeeded();
+      }
+    };
+
+    scheduleMidnightReset();
+    window.addEventListener("focus", resetDailyPrepStateIfNeeded);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      if (timeoutId) {
+        window.clearTimeout(timeoutId);
+      }
+
+      window.removeEventListener("focus", resetDailyPrepStateIfNeeded);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [resetDailyPrepStateIfNeeded]);
+
+  useEffect(() => {
+    persistPrepStateToLocalStorage({
+      dateKey: prepStateDateKey,
+      checkedItemsByMeal,
+      prepSubstitutionsByMeal,
+    });
+  }, [prepStateDateKey, checkedItemsByMeal, prepSubstitutionsByMeal]);
 
   // --- HANDLERS ---
   const handleGramsChange = (mealName, foodId, value) => {
@@ -90,11 +263,60 @@ export default function App() {
     });
   };
 
-  const toggleCheckItem = (foodId) => {
-    setCheckedItems((prev) => ({
+  const toggleCheckItem = (mealName, foodId) => {
+    setCheckedItemsByMeal((prev) => ({
       ...prev,
-      [foodId]: !prev[foodId],
+      [mealName]: {
+        ...prev[mealName],
+        [foodId]: !prev[mealName]?.[foodId],
+      },
     }));
+  };
+
+  const openSubstitutionModal = (mealName, foodId) => {
+    setSubstitutionModalContext({
+      isOpen: true,
+      mealName,
+      foodId,
+    });
+  };
+
+  const applySubstitution = (replacementFoodId) => {
+    const { mealName, foodId } = substitutionModalContext;
+
+    if (!mealName || !foodId) {
+      return;
+    }
+
+    setPrepSubstitutionsByMeal((prev) => {
+      const currentMealSubstitutions = prev[mealName] || {};
+
+      if (replacementFoodId === foodId) {
+        const { [foodId]: _removed, ...remainingMealSubstitutions } =
+          currentMealSubstitutions;
+
+        if (Object.keys(remainingMealSubstitutions).length === 0) {
+          const { [mealName]: _removedMeal, ...remainingMeals } = prev;
+          return remainingMeals;
+        }
+
+        return {
+          ...prev,
+          [mealName]: remainingMealSubstitutions,
+        };
+      }
+
+      return {
+        ...prev,
+        [mealName]: {
+          ...currentMealSubstitutions,
+          [foodId]: replacementFoodId,
+        },
+      };
+    });
+    setIsSubstitutionMode(false);
+
+    closeSubstitutionModal();
   };
 
   const toggleShoppingItem = (foodId) => {
@@ -216,8 +438,11 @@ export default function App() {
             mealToPrepare={mealToPrepare}
             setMealToPrepare={setMealToPrepare}
             checkedItems={checkedItems}
-            setCheckedItems={setCheckedItems}
-            toggleCheckItem={toggleCheckItem}
+            substitutions={substitutionsForMeal}
+            isSubstitutionMode={isSubstitutionMode}
+            setIsSubstitutionMode={setIsSubstitutionMode}
+            toggleCheckItem={(foodId) => toggleCheckItem(mealToPrepare, foodId)}
+            openSubstitutionModal={openSubstitutionModal}
           />
         )}
 
@@ -266,6 +491,16 @@ export default function App() {
         onSavePlan={handleSaveMealPlan}
         onSelectPlan={handleSelectMealPlan}
         onDeletePlan={handleDeleteMealPlan}
+      />
+
+      <SubstitutionsModal
+        isOpen={isSubstitutionModalOpen}
+        mealName={modalMealName}
+        sourceFoodId={modalFoodId}
+        sourceFoodAmount={modalFoodAmount}
+        currentReplacementFoodId={modalCurrentReplacementFoodId}
+        onClose={closeSubstitutionModal}
+        onApplySubstitution={applySubstitution}
       />
     </div>
   );
