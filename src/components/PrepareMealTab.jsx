@@ -18,8 +18,12 @@ export default function PrepareMealTab({
     return acc;
   }, {});
 
-  const handleRowClick = (foodId) => {
+  const handleRowClick = (foodId, isChecked) => {
     if (isSubstitutionMode) {
+      if (isChecked) {
+        return;
+      }
+
       openSubstitutionModal(mealToPrepare, foodId);
       return;
     }
@@ -90,13 +94,17 @@ export default function PrepareMealTab({
               return (
                 <div
                   key={food.id}
-                  onClick={() => handleRowClick(food.id)}
-                  className={`flex items-center justify-between px-4 py-4 cursor-pointer border-b-4 border-black transition-colors ${
+                  onClick={() => handleRowClick(food.id, isChecked)}
+                  className={`flex items-center justify-between px-4 py-4 border-b-4 border-black transition-colors ${
                     isChecked
                       ? "bg-white opacity-60"
                       : isSubstitutionMode
                         ? "bg-[#FFF4B3] hover:bg-[#FFE35C]"
                         : "bg-[#FFFBE6] hover:bg-[#FFF176]"
+                  } ${
+                    isSubstitutionMode && isChecked
+                      ? "cursor-not-allowed"
+                      : "cursor-pointer"
                   }`}
                 >
                   <div className='flex items-center gap-4'>
