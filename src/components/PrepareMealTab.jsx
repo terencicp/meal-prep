@@ -1,5 +1,5 @@
 import React from "react";
-import { Utensils, CheckCircle2, Circle } from "lucide-react";
+import { Utensils, CheckCircle2, Circle, RefreshCw } from "lucide-react";
 import { FOOD_GROUPS, MEAL_NAMES } from "../data/constants";
 
 export default function PrepareMealTab({
@@ -122,8 +122,15 @@ export default function PrepareMealTab({
                         {displayName}
                       </span>
                       {substitutionFood && (
-                        <span className='text-[10px] sm:text-xs font-bold uppercase tracking-wider text-black/80'>
-                          (REPLACED)
+                        <span
+                          className='inline-flex items-center text-black/80 ml-1'
+                          title='Replaced'
+                          aria-label='Replaced'
+                        >
+                          <RefreshCw
+                            className='w-3.5 h-3.5 sm:w-4 sm:h-4'
+                            strokeWidth={2.5}
+                          />
                         </span>
                       )}
                     </div>
