@@ -107,18 +107,27 @@ export default function PrepareMealTab({
                       : "cursor-pointer"
                   }`}
                 >
-                  <div className='flex items-center gap-4'>
-                    {isChecked ? (
-                      <CheckCircle2
-                        className='w-6 h-6 text-black'
-                        strokeWidth={2.8}
-                      />
-                    ) : (
-                      <Circle
-                        className='w-6 h-6 text-black'
-                        strokeWidth={2.8}
-                      />
-                    )}
+                  <div className='flex items-center'>
+                    <span
+                      className={`flex items-center justify-center overflow-hidden transition-all duration-300 ease-out ${
+                        isSubstitutionMode
+                          ? "w-0 mr-0 opacity-0"
+                          : "w-6 mr-4 opacity-100"
+                      }`}
+                      aria-hidden='true'
+                    >
+                      {isChecked ? (
+                        <CheckCircle2
+                          className='w-6 h-6 text-black shrink-0'
+                          strokeWidth={2.8}
+                        />
+                      ) : (
+                        <Circle
+                          className='w-6 h-6 text-black shrink-0'
+                          strokeWidth={2.8}
+                        />
+                      )}
+                    </span>
                     <div className='flex items-center gap-1.5'>
                       <span
                         className={`text-lg font-black uppercase tracking-wide ${
