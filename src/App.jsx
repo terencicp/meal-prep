@@ -1,5 +1,12 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  useMemo,
+} from "react";
 import { useSyncMeals } from "./hooks/useSyncMeals";
+import { useSyncTracker } from "./hooks/useSyncTracker";
 import { useMealCalculations } from "./hooks/useMealCalculations";
 import {
   LOCAL_STORAGE_PREP_STATE_KEY,
@@ -12,6 +19,7 @@ import PlannerTab from "./components/PlannerTab";
 import ShoppingTab from "./components/ShoppingTab";
 import MealPlansModal from "./components/MealPlansModal";
 import SubstitutionsModal from "./components/SubstitutionsModal";
+import TrackerCalendarTab from "./components/TrackerCalendarTab";
 
 function getDefaultMealByLocalHour() {
   const hour = new Date().getHours();
@@ -113,6 +121,46 @@ function persistPrepStateToLocalStorage({
   }
 }
 
+function calculateTrackerSummary(meals, checkedItemsByMeal) {
+  let totalItems = 0;
+  let totalChecked = 0;
+  const byMeal = {};
+
+  Object.entries(meals).forEach(([mealName, foodItems]) => {
+    let mealTotal = 0;
+    let mealChecked = 0;
+
+    Object.keys(foodItems).forEach((foodId) => {
+      const amount = foodItems[foodId];
+      if (amount > 0) {
+        mealTotal += 1;
+        const checkedAmount = checkedItemsByMeal[mealName]?.[foodId];
+        if (checkedAmount) {
+          mealChecked += 1;
+        }
+      }
+    });
+
+    if (mealTotal > 0) {
+      byMeal[mealName] = {
+        checked: mealChecked,
+        total: mealTotal,
+        percentage: Math.round((mealChecked / mealTotal) * 100),
+      };
+      totalItems += mealTotal;
+      totalChecked += mealChecked;
+    }
+  });
+
+  return {
+    totalItems,
+    checkedItems: totalChecked,
+    completionPercentage:
+      totalItems > 0 ? Math.round((totalChecked / totalItems) * 100) : 0,
+    byMeal,
+  };
+}
+
 export default function App() {
   const [activeTab, setActiveTab] = useState(() => {
     const hasLocalData = hasStoredPlannerData();
@@ -136,6 +184,8 @@ export default function App() {
     syncWithGoogle,
     signOutUser,
   } = useSyncMeals();
+  const { syncTrackerToFirebase, loadTrackerHistory, trackerHistory } =
+    useSyncTracker();
   const initialPrepStateRef = useRef(loadPrepStateFromLocalStorage());
   const [mealToPrepare, setMealToPrepare] = useState(getDefaultMealByLocalHour);
   const [checkedItemsByMeal, setCheckedItemsByMeal] = useState(
@@ -183,6 +233,44 @@ export default function App() {
       foodId: null,
     });
   }, []);
+
+  const currentPrepSummary = useMemo(() => {
+    return calculateTrackerSummary(meals, checkedItemsByMeal);
+  }, [meals, checkedItemsByMeal]);
+
+  useEffect(() => {
+    if (user) {
+      syncTrackerToFirebase(prepStateDateKey, currentPrepSummary);
+    }
+  }, [currentPrepSummary, prepStateDateKey, user, syncTrackerToFirebase]);
+
+  useEffect(() => {
+    if (user) {
+      loadTrackerHistory();
+    }
+  }, [user, loadTrackerHistory]);
+
+  const trackerLast30DaysPercent = useMemo(() => {
+    let sumPercentages = 0;
+    const now = new Date();
+    for (let i = 0; i < 30; i++) {
+      const d = new Date(now);
+      d.setDate(d.getDate() - i);
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, "0");
+      const day = String(d.getDate()).padStart(2, "0");
+      const dateKey = `${year}-${month}-${day}`;
+
+      const data =
+        dateKey === prepStateDateKey
+          ? currentPrepSummary
+          : trackerHistory[dateKey];
+      if (data && data.completionPercentage) {
+        sumPercentages += data.completionPercentage;
+      }
+    }
+    return Math.round(sumPercentages / 30);
+  }, [trackerHistory, currentPrepSummary, prepStateDateKey]);
 
   const clearDailyPrepState = useCallback(() => {
     setCheckedItemsByMeal({});
@@ -442,6 +530,17 @@ export default function App() {
             setIsSubstitutionMode={setIsSubstitutionMode}
             toggleCheckItem={(foodId) => toggleCheckItem(mealToPrepare, foodId)}
             openSubstitutionModal={openSubstitutionModal}
+            setActiveTab={setActiveTab}
+            trackerLast30DaysPercent={trackerLast30DaysPercent}
+          />
+        )}
+
+        {activeTab === "tracker" && (
+          <TrackerCalendarTab
+            trackerHistory={trackerHistory}
+            onBack={() => setActiveTab("prepare")}
+            currentPrepDateKey={prepStateDateKey}
+            currentPrepSummary={currentPrepSummary}
           />
         )}
 

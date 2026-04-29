@@ -1,5 +1,11 @@
 import React from "react";
-import { Utensils, CheckCircle2, Circle, RefreshCw } from "lucide-react";
+import {
+  Utensils,
+  CheckCircle2,
+  Circle,
+  RefreshCw,
+  ArrowRight,
+} from "lucide-react";
 import { FOOD_GROUPS, MEAL_NAMES } from "../data/constants";
 
 export default function PrepareMealTab({
@@ -12,6 +18,8 @@ export default function PrepareMealTab({
   setIsSubstitutionMode,
   toggleCheckItem,
   openSubstitutionModal,
+  setActiveTab,
+  trackerLast30DaysPercent,
 }) {
   const foodGroupById = FOOD_GROUPS.reduce((acc, food) => {
     acc[food.id] = food;
@@ -184,6 +192,26 @@ export default function PrepareMealTab({
           </button>
         </div>
       )}
+
+      <div className='mt-10'>
+        <button
+          onClick={() => setActiveTab("tracker")}
+          className='w-full bg-black text-white p-4 sm:p-6 border-4 border-black border-b-[6px] border-r-[6px] border-[#FFD600] flex justify-between items-center transition-transform hover:translate-x-1 hover:translate-y-1 hover:border-b-4 hover:border-r-4 relative z-10'
+          style={{ boxShadow: "-4px 4px 0px 0px #FFD600" }}
+        >
+          <div className='flex flex-col text-left'>
+            <span className='font-black text-xl uppercase tracking-wide'>
+              Habit Tracker
+            </span>
+            <span className='text-[#FFD600] font-black text-sm tracking-wide mt-2'>
+              {trackerLast30DaysPercent}% LAST 30 DAYS
+            </span>
+          </div>
+          <div className='bg-[#FFD600] rounded-full p-2 border-2 border-black flex items-center justify-center'>
+            <ArrowRight className='w-6 h-6 text-black' strokeWidth={3} />
+          </div>
+        </button>
+      </div>
     </div>
   );
 }
