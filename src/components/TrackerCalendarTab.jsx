@@ -130,7 +130,7 @@ export default function TrackerCalendarTab({
         >
           <ChevronLeft className='w-6 h-6' strokeWidth={4} />
         </button>
-        <h1 className='text-2xl sm:text-3xl font-black uppercase tracking-wide flex-1 text-center mr-10'>
+        <h1 className='text-3xl sm:text-4xl font-black text-black uppercase tracking-tight flex-1 text-center mr-10'>
           Adherence
         </h1>
       </div>
