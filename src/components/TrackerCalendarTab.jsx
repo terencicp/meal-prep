@@ -198,15 +198,13 @@ export default function TrackerCalendarTab({
             const today = new Date();
             today.setHours(0, 0, 0, 0);
             const isPastDay = currentDayDate < today;
+            const isToday = currentDayDate.getTime() === today.getTime();
 
-            // "The border is black for streak days. Red days have no checked meals."
+            // "The border is black for streak days. Past days with no checked meals are gray."
             const isStreakDay = percent > 0;
-            const isRedDay = hasMeals && percent === 0;
 
             let textColor = "text-black";
-            if (isRedDay) {
-              textColor = "text-red-500";
-            } else if (isPastDay && percent === 0) {
+            if (isPastDay && percent === 0) {
               textColor = "text-gray-400";
             }
 
