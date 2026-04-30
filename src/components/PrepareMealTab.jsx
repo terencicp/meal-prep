@@ -201,7 +201,7 @@ export default function PrepareMealTab({
         >
           <div className='flex flex-col text-left'>
             <span className='font-black text-xl uppercase tracking-wide'>
-              Habit Tracker
+              Adherence
             </span>
             <span className='text-[#FFD600] font-black text-sm tracking-wide mt-2'>
               {trackerLast30DaysPercent}% LAST 30 DAYS

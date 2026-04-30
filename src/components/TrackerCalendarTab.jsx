@@ -123,18 +123,6 @@ export default function TrackerCalendarTab({
 
   return (
     <div className='w-full max-w-116 mx-auto px-3 sm:px-0'>
-      <div className='flex items-center justify-between mb-4'>
-        <button
-          onClick={onBack}
-          className='p-1 border-[4px] border-black bg-white hover:bg-gray-100 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]'
-        >
-          <ChevronLeft className='w-6 h-6' strokeWidth={4} />
-        </button>
-        <h1 className='text-3xl sm:text-4xl font-black text-black uppercase tracking-tight flex-1 text-center mr-10'>
-          Adherence
-        </h1>
-      </div>
-
       <div className='grid grid-cols-2 gap-4 mb-6'>
         <div className='bg-black text-white p-4 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] border-4 border-black uppercase'>
           <h3 className='text-sm font-black tracking-wide text-[#FFD600] mb-1'>
