@@ -5,57 +5,75 @@ import { FOOD_GROUPS } from "../data/constants";
 export default function SubstitutionsModal({
   isOpen,
   mealName,
-  sourceFoodId,
-  sourceFoodAmount,
-  currentReplacementFoodId,
+  sources,
+  restoreInfo,
   onClose,
   onApplySubstitution,
+  onRestoreSubstitution,
 }) {
-  const sourceFood = useMemo(() => {
-    return FOOD_GROUPS.find((food) => food.id === sourceFoodId) || null;
-  }, [sourceFoodId]);
+  const foodGroupById = useMemo(() => {
+    return FOOD_GROUPS.reduce((acc, food) => {
+      acc[food.id] = food;
+      return acc;
+    }, {});
+  }, []);
 
-  const targetCalories = useMemo(() => {
-    if (
-      !sourceFood ||
-      !Number.isFinite(sourceFoodAmount) ||
-      sourceFoodAmount <= 0
-    ) {
-      return 0;
-    }
-
-    return (sourceFoodAmount / 100) * sourceFood.kCal;
-  }, [sourceFood, sourceFoodAmount]);
-
-  const substitutionRows = useMemo(() => {
-    if (!sourceFood || targetCalories <= 0) {
+  const resolvedSources = useMemo(() => {
+    if (!Array.isArray(sources)) {
       return [];
     }
+    return sources
+      .map((source) => {
+        const food = foodGroupById[source.foodId];
+        if (!food) return null;
+        return { food, grams: source.grams };
+      })
+      .filter(Boolean);
+  }, [sources, foodGroupById]);
 
-    const canUndoSubstitution =
-      Boolean(currentReplacementFoodId) &&
-      currentReplacementFoodId !== sourceFood.id;
+  const targetCalories = useMemo(() => {
+    return resolvedSources.reduce((sum, { food, grams }) => {
+      if (!Number.isFinite(grams) || grams <= 0) return sum;
+      return sum + (grams / 100) * food.kCal;
+    }, 0);
+  }, [resolvedSources]);
 
-    const substitutionCandidates = canUndoSubstitution
-      ? [sourceFood, ...FOOD_GROUPS.filter((food) => food.id !== sourceFood.id)]
-      : FOOD_GROUPS.filter((food) => food.id !== sourceFood.id);
+  const sourceIdSet = useMemo(() => {
+    return new Set(resolvedSources.map((s) => s.food.id));
+  }, [resolvedSources]);
 
-    return substitutionCandidates.map((food) => {
-      const grams =
-        food.kCal > 0 ? Math.round((targetCalories * 100) / food.kCal) : 0;
+  const restoreRow = useMemo(() => {
+    if (!restoreInfo) return null;
+    const names = restoreInfo.sourceIds
+      .map((id) => foodGroupById[id]?.name)
+      .filter(Boolean);
+    if (names.length === 0) return null;
+    return { names };
+  }, [restoreInfo, foodGroupById]);
 
-      return {
-        id: food.id,
-        name: food.name,
-        grams,
-        isRestoreOption: food.id === sourceFood.id,
-      };
-    });
-  }, [sourceFood, targetCalories, currentReplacementFoodId]);
+  const candidateRows = useMemo(() => {
+    if (resolvedSources.length === 0 || targetCalories <= 0) {
+      return [];
+    }
+    const candidates =
+      resolvedSources.length === 1
+        ? FOOD_GROUPS.filter((food) => !sourceIdSet.has(food.id))
+        : FOOD_GROUPS;
+    return candidates.map((food) => ({
+      id: food.id,
+      name: food.name,
+      grams:
+        food.kCal > 0 ? Math.round((targetCalories * 100) / food.kCal) : 0,
+    }));
+  }, [resolvedSources, sourceIdSet, targetCalories]);
 
-  if (!isOpen || !sourceFood) {
+  if (!isOpen || resolvedSources.length === 0) {
     return null;
   }
+
+  const headerSubtitle = resolvedSources
+    .map(({ food, grams }) => `${food.name} ${grams}g`)
+    .join(" + ");
 
   return (
     <div className='fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4'>
@@ -73,7 +91,7 @@ export default function SubstitutionsModal({
               Substitutions
             </h2>
             <p className='text-xs sm:text-sm font-bold uppercase tracking-wide text-black mt-1'>
-              {mealName} - {sourceFood.name} {sourceFoodAmount}g
+              {mealName} - {headerSubtitle}
             </p>
           </div>
           <button
@@ -88,7 +106,26 @@ export default function SubstitutionsModal({
 
         <div className='px-4 py-4 sm:px-6 sm:py-5 bg-[#F7F7F7]'>
           <div className='max-h-[22rem] sm:max-h-[24rem] overflow-y-auto space-y-2 pr-1'>
-            {substitutionRows.map((row) => (
+            {restoreRow && (
+              <div className='border-4 border-black bg-white px-3 py-3 flex items-center justify-between gap-3'>
+                <div>
+                  <p className='text-base sm:text-lg font-black uppercase tracking-wide text-black'>
+                    {restoreRow.names.join(", ")}
+                  </p>
+                  <p className='text-xs sm:text-sm font-bold text-black/70'>
+                    Original
+                  </p>
+                </div>
+                <button
+                  type='button'
+                  onClick={onRestoreSubstitution}
+                  className='px-4 py-2 border-4 border-black bg-black text-white text-xs sm:text-sm font-black uppercase tracking-wide hover:bg-[#333]'
+                >
+                  Restore
+                </button>
+              </div>
+            )}
+            {candidateRows.map((row) => (
               <div
                 key={row.id}
                 className='border-4 border-black bg-white px-3 py-3 flex items-center justify-between gap-3'
@@ -106,7 +143,7 @@ export default function SubstitutionsModal({
                   onClick={() => onApplySubstitution(row.id)}
                   className='px-4 py-2 border-4 border-black bg-black text-white text-xs sm:text-sm font-black uppercase tracking-wide hover:bg-[#333]'
                 >
-                  {row.isRestoreOption ? "Restore" : "Apply"}
+                  Apply
                 </button>
               </div>
             ))}

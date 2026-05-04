@@ -9,6 +9,7 @@ import { useSyncMeals } from "./hooks/useSyncMeals";
 import { useSyncTracker } from "./hooks/useSyncTracker";
 import { useMealCalculations } from "./hooks/useMealCalculations";
 import {
+  FOOD_GROUPS,
   LOCAL_STORAGE_PREP_STATE_KEY,
   LOCAL_STORAGE_MEALS_KEY,
   LOCAL_STORAGE_SETTINGS_KEY,
@@ -61,6 +62,47 @@ function normalizePrepStateObject(value) {
     : {};
 }
 
+function normalizePrepSubstitutionsByMeal(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return {};
+  }
+
+  const result = {};
+  for (const [mealName, mealSubs] of Object.entries(value)) {
+    if (Array.isArray(mealSubs)) {
+      const valid = mealSubs.filter(
+        (sub) =>
+          sub &&
+          typeof sub === "object" &&
+          Array.isArray(sub.sourceIds) &&
+          sub.sourceIds.length > 0 &&
+          sub.sourceIds.every((id) => typeof id === "string") &&
+          typeof sub.replacementFoodId === "string" &&
+          typeof sub.anchorFoodId === "string",
+      );
+      if (valid.length > 0) {
+        result[mealName] = valid;
+      }
+    } else if (mealSubs && typeof mealSubs === "object") {
+      // Migrate legacy { sourceFoodId: replacementFoodId } shape.
+      const migrated = Object.entries(mealSubs)
+        .filter(
+          ([sourceId, replacementId]) =>
+            typeof sourceId === "string" && typeof replacementId === "string",
+        )
+        .map(([sourceId, replacementId]) => ({
+          sourceIds: [sourceId],
+          anchorFoodId: sourceId,
+          replacementFoodId: replacementId,
+        }));
+      if (migrated.length > 0) {
+        result[mealName] = migrated;
+      }
+    }
+  }
+  return result;
+}
+
 function loadPrepStateFromLocalStorage() {
   const todayKey = getLocalDateKey();
 
@@ -88,7 +130,7 @@ function loadPrepStateFromLocalStorage() {
       checkedItemsByMeal: normalizePrepStateObject(
         parsedPrepState.checkedItemsByMeal,
       ),
-      prepSubstitutionsByMeal: normalizePrepStateObject(
+      prepSubstitutionsByMeal: normalizePrepSubstitutionsByMeal(
         parsedPrepState.prepSubstitutionsByMeal,
       ),
     };
@@ -195,13 +237,14 @@ export default function App() {
     initialPrepStateRef.current.prepSubstitutionsByMeal,
   );
   const [isSubstitutionMode, setIsSubstitutionMode] = useState(false);
+  const [selectedSubstitutionAnchors, setSelectedSubstitutionAnchors] =
+    useState([]);
   const [prepStateDateKey, setPrepStateDateKey] = useState(
     initialPrepStateRef.current.dateKey,
   );
   const [substitutionModalContext, setSubstitutionModalContext] = useState({
     isOpen: false,
     mealName: null,
-    foodId: null,
   });
   const [checkedShoppingItems, setCheckedShoppingItems] = useState({});
   const [isMealPlansModalVisible, setIsMealPlansModalVisible] = useState(false);
@@ -215,24 +258,65 @@ export default function App() {
       ? mealPlans.find((plan) => plan.id === activePlanId)?.name || "Meal plan"
       : null;
   const checkedItems = checkedItemsByMeal[mealToPrepare] || {};
-  const substitutionsForMeal = prepSubstitutionsByMeal[mealToPrepare] || {};
+  const substitutionsForMeal = prepSubstitutionsByMeal[mealToPrepare] || [];
   const isSubstitutionModalOpen = Boolean(substitutionModalContext.isOpen);
   const modalMealName = substitutionModalContext.mealName;
-  const modalFoodId = substitutionModalContext.foodId;
-  const modalFoodAmount =
-    modalMealName && modalFoodId ? meals[modalMealName]?.[modalFoodId] || 0 : 0;
-  const modalCurrentReplacementFoodId =
-    modalMealName && modalFoodId
-      ? prepSubstitutionsByMeal[modalMealName]?.[modalFoodId] || null
-      : null;
+  const modalSelectionInfo = useMemo(() => {
+    if (!isSubstitutionModalOpen || !modalMealName) {
+      return { sources: [], restoreInfo: null };
+    }
+
+    const mealSubs = prepSubstitutionsByMeal[modalMealName] || [];
+    const mealFoods = meals[modalMealName] || {};
+    const sources = [];
+    const seenSourceIds = new Set();
+
+    selectedSubstitutionAnchors.forEach((anchor) => {
+      const sub = mealSubs.find((s) => s.anchorFoodId === anchor);
+      const sourceIds = sub ? sub.sourceIds : [anchor];
+      sourceIds.forEach((sourceId) => {
+        if (seenSourceIds.has(sourceId)) {
+          return;
+        }
+        seenSourceIds.add(sourceId);
+        sources.push({
+          foodId: sourceId,
+          grams: mealFoods[sourceId] || 0,
+        });
+      });
+    });
+
+    let restoreInfo = null;
+    if (selectedSubstitutionAnchors.length === 1) {
+      const sub = mealSubs.find(
+        (s) => s.anchorFoodId === selectedSubstitutionAnchors[0],
+      );
+      if (sub) {
+        restoreInfo = {
+          sourceIds: sub.sourceIds,
+          replacementFoodId: sub.replacementFoodId,
+        };
+      }
+    }
+
+    return { sources, restoreInfo };
+  }, [
+    isSubstitutionModalOpen,
+    modalMealName,
+    selectedSubstitutionAnchors,
+    prepSubstitutionsByMeal,
+    meals,
+  ]);
 
   const closeSubstitutionModal = useCallback(() => {
-    setSubstitutionModalContext({
-      isOpen: false,
-      mealName: null,
-      foodId: null,
-    });
+    setSubstitutionModalContext({ isOpen: false, mealName: null });
   }, []);
+
+  const cancelSubstitutionMode = useCallback(() => {
+    setSelectedSubstitutionAnchors([]);
+    setIsSubstitutionMode(false);
+    closeSubstitutionModal();
+  }, [closeSubstitutionModal]);
 
   const currentPrepSummary = useMemo(() => {
     return calculateTrackerSummary(meals, checkedItemsByMeal);
@@ -275,6 +359,7 @@ export default function App() {
   const clearDailyPrepState = useCallback(() => {
     setCheckedItemsByMeal({});
     setPrepSubstitutionsByMeal({});
+    setSelectedSubstitutionAnchors([]);
     setIsSubstitutionMode(false);
     closeSubstitutionModal();
   }, [closeSubstitutionModal]);
@@ -350,59 +435,152 @@ export default function App() {
     });
   };
 
-  const toggleCheckItem = (mealName, foodId) => {
-    setCheckedItemsByMeal((prev) => ({
-      ...prev,
-      [mealName]: {
-        ...prev[mealName],
-        [foodId]: !prev[mealName]?.[foodId],
-      },
-    }));
-  };
-
-  const openSubstitutionModal = (mealName, foodId) => {
-    setSubstitutionModalContext({
-      isOpen: true,
-      mealName,
-      foodId,
+  const setRowChecked = (mealName, sourceFoodIds, nextChecked) => {
+    setCheckedItemsByMeal((prev) => {
+      const prevMeal = prev[mealName] || {};
+      const nextMeal = { ...prevMeal };
+      sourceFoodIds.forEach((foodId) => {
+        if (nextChecked) {
+          nextMeal[foodId] = true;
+        } else {
+          delete nextMeal[foodId];
+        }
+      });
+      return { ...prev, [mealName]: nextMeal };
     });
   };
 
-  const applySubstitution = (replacementFoodId) => {
-    const { mealName, foodId } = substitutionModalContext;
+  const toggleCheckRow = (mealName, sourceFoodIds) => {
+    const mealChecks = checkedItemsByMeal[mealName] || {};
+    const allChecked = sourceFoodIds.every((id) => Boolean(mealChecks[id]));
+    setRowChecked(mealName, sourceFoodIds, !allChecked);
+  };
 
-    if (!mealName || !foodId) {
+  const enterSubstitutionMode = () => {
+    setSelectedSubstitutionAnchors([]);
+    setIsSubstitutionMode(true);
+  };
+
+  const toggleSubstitutionRowSelection = (anchorFoodId) => {
+    setSelectedSubstitutionAnchors((prev) =>
+      prev.includes(anchorFoodId)
+        ? prev.filter((id) => id !== anchorFoodId)
+        : [...prev, anchorFoodId],
+    );
+  };
+
+  const handleSubstituteFoodButtonClick = () => {
+    if (!isSubstitutionMode) {
+      const mealFoods = meals[mealToPrepare] || {};
+      const mealSubs = prepSubstitutionsByMeal[mealToPrepare] || [];
+      const subByAnchor = new Map(mealSubs.map((s) => [s.anchorFoodId, s]));
+      const sourceIdsInSubs = new Set();
+      mealSubs.forEach((s) =>
+        s.sourceIds.forEach((id) => sourceIdsInSubs.add(id)),
+      );
+
+      const displayableAnchors = [];
+      FOOD_GROUPS.forEach((food) => {
+        if ((mealFoods[food.id] || 0) <= 0) return;
+        if (subByAnchor.has(food.id)) {
+          displayableAnchors.push(food.id);
+          return;
+        }
+        if (sourceIdsInSubs.has(food.id)) return;
+        displayableAnchors.push(food.id);
+      });
+
+      if (displayableAnchors.length === 1) {
+        const onlyAnchor = displayableAnchors[0];
+        const sub = subByAnchor.get(onlyAnchor);
+        const sourceIds = sub ? sub.sourceIds : [onlyAnchor];
+        const checks = checkedItemsByMeal[mealToPrepare] || {};
+        const allChecked = sourceIds.every((id) => Boolean(checks[id]));
+        if (!allChecked) {
+          setSelectedSubstitutionAnchors([onlyAnchor]);
+          setIsSubstitutionMode(true);
+          setSubstitutionModalContext({
+            isOpen: true,
+            mealName: mealToPrepare,
+          });
+          return;
+        }
+      }
+
+      enterSubstitutionMode();
       return;
     }
 
+    if (selectedSubstitutionAnchors.length === 0) {
+      cancelSubstitutionMode();
+      return;
+    }
+
+    setSubstitutionModalContext({ isOpen: true, mealName: mealToPrepare });
+  };
+
+  const applySubstitution = (replacementFoodId) => {
+    if (!modalMealName || selectedSubstitutionAnchors.length === 0) {
+      return;
+    }
+
+    const anchors = selectedSubstitutionAnchors;
+    const firstAnchor = anchors[0];
+
     setPrepSubstitutionsByMeal((prev) => {
-      const currentMealSubstitutions = prev[mealName] || {};
+      const currentMealSubs = prev[modalMealName] || [];
 
-      if (replacementFoodId === foodId) {
-        const { [foodId]: _removed, ...remainingMealSubstitutions } =
-          currentMealSubstitutions;
+      const sourceIds = [];
+      const seen = new Set();
+      anchors.forEach((anchor) => {
+        const sub = currentMealSubs.find((s) => s.anchorFoodId === anchor);
+        const ids = sub ? sub.sourceIds : [anchor];
+        ids.forEach((id) => {
+          if (!seen.has(id)) {
+            seen.add(id);
+            sourceIds.push(id);
+          }
+        });
+      });
 
-        if (Object.keys(remainingMealSubstitutions).length === 0) {
-          const { [mealName]: _removedMeal, ...remainingMeals } = prev;
-          return remainingMeals;
-        }
-
-        return {
-          ...prev,
-          [mealName]: remainingMealSubstitutions,
-        };
-      }
-
-      return {
-        ...prev,
-        [mealName]: {
-          ...currentMealSubstitutions,
-          [foodId]: replacementFoodId,
-        },
+      const remainingSubs = currentMealSubs.filter(
+        (s) => !anchors.includes(s.anchorFoodId),
+      );
+      const newSub = {
+        sourceIds,
+        anchorFoodId: firstAnchor,
+        replacementFoodId,
       };
-    });
-    setIsSubstitutionMode(false);
 
+      return { ...prev, [modalMealName]: [...remainingSubs, newSub] };
+    });
+
+    setSelectedSubstitutionAnchors([]);
+    setIsSubstitutionMode(false);
+    closeSubstitutionModal();
+  };
+
+  const restoreSelectedSubstitution = () => {
+    if (!modalMealName || selectedSubstitutionAnchors.length !== 1) {
+      return;
+    }
+
+    const anchor = selectedSubstitutionAnchors[0];
+
+    setPrepSubstitutionsByMeal((prev) => {
+      const currentMealSubs = prev[modalMealName] || [];
+      const remainingSubs = currentMealSubs.filter(
+        (s) => s.anchorFoodId !== anchor,
+      );
+      if (remainingSubs.length === 0) {
+        const { [modalMealName]: _removed, ...rest } = prev;
+        return rest;
+      }
+      return { ...prev, [modalMealName]: remainingSubs };
+    });
+
+    setSelectedSubstitutionAnchors([]);
+    setIsSubstitutionMode(false);
     closeSubstitutionModal();
   };
 
@@ -527,9 +705,12 @@ export default function App() {
             checkedItems={checkedItems}
             substitutions={substitutionsForMeal}
             isSubstitutionMode={isSubstitutionMode}
-            setIsSubstitutionMode={setIsSubstitutionMode}
-            toggleCheckItem={(foodId) => toggleCheckItem(mealToPrepare, foodId)}
-            openSubstitutionModal={openSubstitutionModal}
+            selectedSubstitutionAnchors={selectedSubstitutionAnchors}
+            toggleCheckRow={(sourceFoodIds) =>
+              toggleCheckRow(mealToPrepare, sourceFoodIds)
+            }
+            toggleSubstitutionRowSelection={toggleSubstitutionRowSelection}
+            onSubstituteFoodButtonClick={handleSubstituteFoodButtonClick}
             setActiveTab={setActiveTab}
             trackerLast30DaysPercent={trackerLast30DaysPercent}
           />
@@ -593,11 +774,11 @@ export default function App() {
       <SubstitutionsModal
         isOpen={isSubstitutionModalOpen}
         mealName={modalMealName}
-        sourceFoodId={modalFoodId}
-        sourceFoodAmount={modalFoodAmount}
-        currentReplacementFoodId={modalCurrentReplacementFoodId}
-        onClose={closeSubstitutionModal}
+        sources={modalSelectionInfo.sources}
+        restoreInfo={modalSelectionInfo.restoreInfo}
+        onClose={cancelSubstitutionMode}
         onApplySubstitution={applySubstitution}
+        onRestoreSubstitution={restoreSelectedSubstitution}
       />
     </div>
   );

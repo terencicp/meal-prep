@@ -15,9 +15,10 @@ export default function PrepareMealTab({
   checkedItems,
   substitutions,
   isSubstitutionMode,
-  setIsSubstitutionMode,
-  toggleCheckItem,
-  openSubstitutionModal,
+  selectedSubstitutionAnchors,
+  toggleCheckRow,
+  toggleSubstitutionRowSelection,
+  onSubstituteFoodButtonClick,
   setActiveTab,
   trackerLast30DaysPercent,
 }) {
@@ -26,22 +27,75 @@ export default function PrepareMealTab({
     return acc;
   }, {});
 
-  const handleRowClick = (foodId, isChecked) => {
-    if (isSubstitutionMode) {
-      if (isChecked) {
-        return;
-      }
+  const subByAnchor = new Map();
+  const sourceIdsInSubs = new Set();
+  substitutions.forEach((sub) => {
+    subByAnchor.set(sub.anchorFoodId, sub);
+    sub.sourceIds.forEach((id) => sourceIdsInSubs.add(id));
+  });
 
-      openSubstitutionModal(mealToPrepare, foodId);
+  const mealFoods = meals[mealToPrepare] || {};
+  const displayRows = [];
+  FOOD_GROUPS.forEach((food) => {
+    const amount = mealFoods[food.id] || 0;
+    if (amount <= 0) {
       return;
     }
 
-    toggleCheckItem(foodId);
+    const sub = subByAnchor.get(food.id);
+    if (sub) {
+      const replacement = foodGroupById[sub.replacementFoodId];
+      if (!replacement) {
+        return;
+      }
+      const totalCalories = sub.sourceIds.reduce((sum, sourceId) => {
+        const sourceFood = foodGroupById[sourceId];
+        const sourceGrams = mealFoods[sourceId] || 0;
+        if (!sourceFood) return sum;
+        return sum + (sourceGrams * sourceFood.kCal) / 100;
+      }, 0);
+      const replacementGrams =
+        replacement.kCal > 0
+          ? Math.round((totalCalories * 100) / replacement.kCal)
+          : 0;
+      const isChecked = sub.sourceIds.every((id) => Boolean(checkedItems[id]));
+      displayRows.push({
+        anchorFoodId: food.id,
+        displayName: replacement.name,
+        displayAmount: replacementGrams,
+        isChecked,
+        sourceIds: sub.sourceIds,
+        isSubstituted: true,
+      });
+      return;
+    }
+
+    if (sourceIdsInSubs.has(food.id)) {
+      return;
+    }
+
+    displayRows.push({
+      anchorFoodId: food.id,
+      displayName: food.name,
+      displayAmount: amount,
+      isChecked: Boolean(checkedItems[food.id]),
+      sourceIds: [food.id],
+      isSubstituted: false,
+    });
+  });
+
+  const handleRowClick = (row) => {
+    if (isSubstitutionMode) {
+      if (row.isChecked) {
+        return;
+      }
+      toggleSubstitutionRowSelection(row.anchorFoodId);
+      return;
+    }
+    toggleCheckRow(row.sourceIds);
   };
 
-  const hasMealItems =
-    FOOD_GROUPS.filter((food) => meals[mealToPrepare]?.[food.id] > 0).length >
-    0;
+  const hasMealItems = displayRows.length > 0;
 
   return (
     <div className='w-full max-w-116 mx-auto px-3 sm:px-0'>
@@ -81,36 +135,27 @@ export default function PrepareMealTab({
               </p>
             </div>
           ) : (
-            FOOD_GROUPS.filter(
-              (food) => meals[mealToPrepare]?.[food.id] > 0,
-            ).map((food) => {
-              const amount = meals[mealToPrepare][food.id];
-              const isChecked = checkedItems[food.id];
-              const substitutionFood = substitutions[food.id]
-                ? foodGroupById[substitutions[food.id]]
-                : null;
-              const substituteAmount = substitutionFood
-                ? Math.round((amount * food.kCal) / substitutionFood.kCal)
-                : amount;
-              const displayName = substitutionFood
-                ? substitutionFood.name
-                : food.name;
-              const displayAmount = Number.isFinite(substituteAmount)
-                ? substituteAmount
-                : amount;
+            displayRows.map((row) => {
+              const isSelected =
+                isSubstitutionMode &&
+                selectedSubstitutionAnchors.includes(row.anchorFoodId);
+              const isCheckedDisabledForSub =
+                isSubstitutionMode && row.isChecked;
+
+              const rowBg = row.isChecked
+                ? "bg-white opacity-60"
+                : isSelected
+                  ? "bg-[#FFD600]"
+                  : isSubstitutionMode
+                    ? "bg-[#FFF4B3] hover:bg-[#FFE35C]"
+                    : "bg-[#FFFBE6] hover:bg-[#FFF176]";
 
               return (
                 <div
-                  key={food.id}
-                  onClick={() => handleRowClick(food.id, isChecked)}
-                  className={`flex items-center justify-between px-4 py-4 border-b-4 border-black transition-colors ${
-                    isChecked
-                      ? "bg-white opacity-60"
-                      : isSubstitutionMode
-                        ? "bg-[#FFF4B3] hover:bg-[#FFE35C]"
-                        : "bg-[#FFFBE6] hover:bg-[#FFF176]"
-                  } ${
-                    isSubstitutionMode && isChecked
+                  key={row.anchorFoodId}
+                  onClick={() => handleRowClick(row)}
+                  className={`flex items-center justify-between px-4 py-4 border-b-4 border-black transition-colors ${rowBg} ${
+                    isCheckedDisabledForSub
                       ? "cursor-not-allowed"
                       : "cursor-pointer"
                   }`}
@@ -124,7 +169,7 @@ export default function PrepareMealTab({
                       }`}
                       aria-hidden='true'
                     >
-                      {isChecked ? (
+                      {row.isChecked ? (
                         <CheckCircle2
                           className='w-6 h-6 text-black shrink-0'
                           strokeWidth={2.8}
@@ -139,18 +184,18 @@ export default function PrepareMealTab({
                     <div className='flex items-center gap-1.5'>
                       <span
                         className={`text-lg font-black uppercase tracking-wide ${
-                          isChecked
+                          row.isChecked
                             ? "line-through decoration-[3px] decoration-black text-black"
                             : "text-black"
                         }`}
                       >
-                        {displayName}
+                        {row.displayName}
                       </span>
-                      {substitutionFood && (
+                      {(row.isSubstituted || isSelected) && (
                         <span
                           className='inline-flex items-center text-black/80 ml-1'
-                          title='Replaced'
-                          aria-label='Replaced'
+                          title={isSelected ? "Selected for substitution" : "Replaced"}
+                          aria-label={isSelected ? "Selected for substitution" : "Replaced"}
                         >
                           <RefreshCw
                             className='w-3.5 h-3.5 sm:w-4 sm:h-4'
@@ -162,12 +207,12 @@ export default function PrepareMealTab({
                   </div>
                   <span
                     className={`text-xl font-black ${
-                      isChecked
+                      row.isChecked
                         ? "line-through decoration-[3px] decoration-black text-black"
                         : "text-black"
                     }`}
                   >
-                    {displayAmount}
+                    {row.displayAmount}
                     <span className='text-sm font-bold ml-1'>g</span>
                   </span>
                 </div>
@@ -181,14 +226,16 @@ export default function PrepareMealTab({
         <div className='mt-6 flex justify-center'>
           <button
             type='button'
-            onClick={() => setIsSubstitutionMode((prev) => !prev)}
+            onClick={onSubstituteFoodButtonClick}
             className={`w-50 px-5 py-3 sm:py-3 border-4 border-black text-sm sm:text-sm font-black uppercase tracking-wide transition-colors shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-x-1 active:translate-y-1 active:shadow-none ${
               isSubstitutionMode
-                ? "bg-[#FFD600] text-black"
+                ? selectedSubstitutionAnchors.length > 0
+                  ? "bg-[#FFD600] text-black"
+                  : "bg-[#FFF4B3] text-black"
                 : "bg-white text-black hover:bg-[#FFF176]"
             }`}
           >
-            {isSubstitutionMode ? "CANCEL" : "Substitute food"}
+            Substitute food
           </button>
         </div>
       )}
