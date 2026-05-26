@@ -194,8 +194,16 @@ export default function PrepareMealTab({
                       {(row.isSubstituted || isSelected) && (
                         <span
                           className='inline-flex items-center text-black/80 ml-1'
-                          title={isSelected ? "Selected for substitution" : "Replaced"}
-                          aria-label={isSelected ? "Selected for substitution" : "Replaced"}
+                          title={
+                            isSelected
+                              ? "Selected for substitution"
+                              : "Replaced"
+                          }
+                          aria-label={
+                            isSelected
+                              ? "Selected for substitution"
+                              : "Replaced"
+                          }
                         >
                           <RefreshCw
                             className='w-3.5 h-3.5 sm:w-4 sm:h-4'
@@ -243,14 +251,14 @@ export default function PrepareMealTab({
       <div className='mt-10'>
         <button
           onClick={() => setActiveTab("tracker")}
-          className='w-full bg-black text-white p-4 sm:p-6 border-4 border-black border-b-[6px] border-r-[6px] border-[#FFD600] flex justify-between items-center transition-transform hover:translate-x-1 hover:translate-y-1 hover:border-b-4 hover:border-r-4 relative z-10'
+          className='w-full max-w-xs mx-auto bg-black text-white px-4 py-3 border-4 border-black border-b-[6px] border-r-[6px] border-[#FFD600] flex justify-between items-center transition-transform hover:translate-x-1 hover:translate-y-1 hover:border-b-4 hover:border-r-4 relative z-10'
           style={{ boxShadow: "-4px 4px 0px 0px #FFD600" }}
         >
           <div className='flex flex-col text-left'>
             <span className='font-black text-xl uppercase tracking-wide'>
               Adherence
             </span>
-            <span className='text-[#FFD600] font-black text-sm tracking-wide mt-2'>
+            <span className='text-[#FFD600] font-black text-sm tracking-wide mt-1'>
               {trackerLast30DaysPercent}% LAST 30 DAYS
             </span>
           </div>

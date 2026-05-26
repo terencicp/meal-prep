@@ -1,5 +1,11 @@
 import React from "react";
-import { CalendarDays, ShoppingCart, CheckCircle2, Circle } from "lucide-react";
+import {
+  CalendarDays,
+  ShoppingCart,
+  CheckCircle2,
+  Circle,
+  ArrowRight,
+} from "lucide-react";
 
 const EGG_WEIGHT_GRAMS = 50;
 const YOGURT_WEIGHT_GRAMS = 120;
@@ -158,6 +164,26 @@ export default function ShoppingTab({
       <p className='text-xs text-slate-500 text-center px-2 font-bold'>
         A yogurt is 120 grams, an egg is 50 grams.
       </p>
+
+      <div className='mt-10 flex justify-center'>
+        <button
+          onClick={() => setActiveTab("shopping-price-tracker")}
+          className='w-full max-w-xs bg-black text-white px-4 py-3 border-4 border-black border-b-[6px] border-r-[6px] border-[#FFD600] flex justify-between items-center transition-transform hover:translate-x-1 hover:translate-y-1 hover:border-b-4 hover:border-r-4 relative z-10'
+          style={{ boxShadow: "-4px 4px 0px 0px #FFD600" }}
+        >
+          <div className='flex flex-col text-left'>
+            <span className='font-black text-xl uppercase tracking-wide'>
+              Price Tracker
+            </span>
+            <span className='text-[#FFD600] font-black text-sm tracking-wide mt-1'>
+              Best: Supermarket X
+            </span>
+          </div>
+          <div className='bg-[#FFD600] rounded-full p-2 border-2 border-black flex items-center justify-center'>
+            <ArrowRight className='w-6 h-6 text-black' strokeWidth={3} />
+          </div>
+        </button>
+      </div>
     </div>
   );
 }

@@ -18,6 +18,7 @@ import Header from "./components/Header";
 import PrepareMealTab from "./components/PrepareMealTab";
 import PlannerTab from "./components/PlannerTab";
 import ShoppingTab from "./components/ShoppingTab";
+import ShoppingPriceTracker from "./components/ShoppingPriceTracker";
 import MealPlansModal from "./components/MealPlansModal";
 import SubstitutionsModal from "./components/SubstitutionsModal";
 import TrackerCalendarTab from "./components/TrackerCalendarTab";
@@ -754,6 +755,10 @@ export default function App() {
             toggleShoppingItem={toggleShoppingItem}
             setActiveTab={setActiveTab}
           />
+        )}
+
+        {activeTab === "shopping-price-tracker" && (
+          <ShoppingPriceTracker onBack={() => setActiveTab("shopping")} />
         )}
       </main>
 
