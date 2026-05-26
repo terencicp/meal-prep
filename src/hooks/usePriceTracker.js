@@ -58,6 +58,7 @@ function parsePriceCsv(csvText) {
 
 function buildStoreTotals({ storeNames, categories, shoppingList }) {
   const shippingPrices = categories.shipping || {};
+  const bufferMultiplier = 1.2;
 
   return storeNames
     .map((store) => {
@@ -68,8 +69,9 @@ function buildStoreTotals({ storeNames, categories, shoppingList }) {
         return total + pricePerKg * item.finalAmountKg;
       }, 0);
 
+      const bufferedItemsTotal = itemsTotal * bufferMultiplier;
       const shipping = shippingPrices[store] || 0;
-      const total = itemsTotal + shipping;
+      const total = bufferedItemsTotal + shipping;
 
       return {
         name: store,
