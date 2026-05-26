@@ -8,6 +8,7 @@ import React, {
 import { useSyncMeals } from "./hooks/useSyncMeals";
 import { useSyncTracker } from "./hooks/useSyncTracker";
 import { useMealCalculations } from "./hooks/useMealCalculations";
+import { usePriceTracker } from "./hooks/usePriceTracker";
 import {
   FOOD_GROUPS,
   LOCAL_STORAGE_PREP_STATE_KEY,
@@ -647,6 +648,8 @@ export default function App() {
     prepDays,
   });
 
+  const priceTracker = usePriceTracker({ shoppingList });
+
   const authControls = !user ? (
     <button
       onClick={handleSaveClick}
@@ -754,11 +757,15 @@ export default function App() {
             checkedShoppingItems={checkedShoppingItems}
             toggleShoppingItem={toggleShoppingItem}
             setActiveTab={setActiveTab}
+            priceTracker={priceTracker}
           />
         )}
 
         {activeTab === "shopping-price-tracker" && (
-          <ShoppingPriceTracker onBack={() => setActiveTab("shopping")} />
+          <ShoppingPriceTracker
+            onBack={() => setActiveTab("shopping")}
+            priceTracker={priceTracker}
+          />
         )}
       </main>
 

@@ -47,7 +47,17 @@ export default function ShoppingTab({
   checkedShoppingItems,
   toggleShoppingItem,
   setActiveTab,
+  priceTracker,
 }) {
+  const { isLoading, error, bestStore } = priceTracker || {};
+  const bestStoreLabel = isLoading
+    ? "Loading prices..."
+    : error
+      ? "Best: unavailable"
+      : bestStore?.name
+        ? `Best: ${bestStore.name}`
+        : "Best: --";
+
   return (
     <div className='w-full max-w-md mx-auto space-y-5 px-3 sm:px-0'>
       <div className='bg-white border-4 border-black shadow-[7px_7px_0px_0px_rgba(0,0,0,1)] overflow-hidden'>
@@ -176,7 +186,7 @@ export default function ShoppingTab({
               Price Tracker
             </span>
             <span className='text-[#FFD600] font-black text-sm tracking-wide mt-1'>
-              Best: Supermarket X
+              {bestStoreLabel}
             </span>
           </div>
           <div className='bg-[#FFD600] rounded-full p-2 border-2 border-black flex items-center justify-center'>
