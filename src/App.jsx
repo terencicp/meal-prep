@@ -1,6 +1,7 @@
 import React, {
   useCallback,
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
   useMemo,
@@ -224,7 +225,7 @@ export default function App() {
     [activeTab],
   );
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (activeTab === "planner") {
       window.scrollTo(0, plannerScrollRef.current);
     } else {
