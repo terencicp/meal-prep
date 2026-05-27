@@ -216,7 +216,7 @@ export default function TrackerCalendarTab({
         </div>
       </div>
       <div className='mt-8 text-center text-xs font-semibold text-gray-400'>
-        v0.4.2
+        v0.4.3
       </div>
     </div>
   );

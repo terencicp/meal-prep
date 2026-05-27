@@ -227,7 +227,7 @@ export default function App() {
 
   useEffect(() => {
     // We use a tiny timeout to allow the browser to paint the new DOM
-    // before we force it to scroll. This fixes the jumpy layout flash 
+    // before we force it to scroll. This fixes the jumpy layout flash
     // and prevents iOS Safari from interrupting tap events.
     setTimeout(() => {
       if (activeTab === "planner") {
