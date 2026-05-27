@@ -220,16 +220,23 @@ export default function App() {
       if (activeTab === "planner") {
         plannerScrollRef.current = window.scrollY;
       }
+      
+      // If navigating to a tab that requires top scroll, do it instantly BEFORE the DOM changes.
+      // This prevents the browser from doing emergency scroll-clamping (flicker) when the document shrinks.
+      if (newTab !== "planner") {
+        window.scrollTo(0, 0);
+      }
+
       setActiveTab(newTab);
     },
     [activeTab],
   );
 
   useLayoutEffect(() => {
+    // Only restore scroll for the planner tab AFTER React has rendered it,
+    // so the document has enough height to actually scroll down.
     if (activeTab === "planner") {
       window.scrollTo(0, plannerScrollRef.current);
-    } else {
-      window.scrollTo(0, 0);
     }
   }, [activeTab]);
 
