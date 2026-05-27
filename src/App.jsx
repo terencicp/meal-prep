@@ -214,28 +214,26 @@ export default function App() {
   });
 
   const plannerScrollRef = useRef(0);
+  const mainRef = useRef(null);
 
   const handleTabChange = useCallback(
     (newTab) => {
-      if (activeTab === "planner") {
-        plannerScrollRef.current = window.scrollY;
+      if (activeTab === "planner" && mainRef.current) {
+        plannerScrollRef.current = mainRef.current.scrollTop;
       }
       setActiveTab(newTab);
     },
     [activeTab],
   );
 
-  useEffect(() => {
-    // We use a tiny timeout to allow the browser to paint the new DOM
-    // before we force it to scroll. This fixes the jumpy layout flash
-    // and prevents iOS Safari from interrupting tap events.
-    setTimeout(() => {
-      if (activeTab === "planner") {
-        window.scrollTo({ top: plannerScrollRef.current, behavior: "instant" });
-      } else {
-        window.scrollTo({ top: 0, behavior: "instant" });
-      }
-    }, 10);
+  useLayoutEffect(() => {
+    if (!mainRef.current) return;
+    
+    if (activeTab === "planner") {
+      mainRef.current.scrollTop = plannerScrollRef.current;
+    } else {
+      mainRef.current.scrollTop = 0;
+    }
   }, [activeTab]);
 
   const {
@@ -715,7 +713,7 @@ export default function App() {
 
   // --- RENDERERS ---
   return (
-    <div className='min-h-screen bg-[#EFEFEF] text-slate-800 font-sans pb-20'>
+    <div className='h-[100dvh] flex flex-col bg-[#EFEFEF] text-slate-800 font-sans'>
       <Header
         activeTab={activeTab}
         setActiveTab={handleTabChange}
@@ -724,12 +722,16 @@ export default function App() {
       />
 
       <main
-        className={`max-w-5xl mx-auto px-4 sm:px-6 pb-8 ${
-          activeTab === "planner" ? "pt-6" : "pt-8"
-        }`}
+        ref={mainRef}
+        className='flex-1 overflow-y-auto overscroll-y-none'
       >
-        {activeTab === "prepare" && (
-          <PrepareMealTab
+        <div 
+          className={`max-w-5xl mx-auto px-4 sm:px-6 pb-20 ${
+            activeTab === "planner" ? "pt-6" : "pt-8"
+          }`}
+        >
+          {activeTab === "prepare" && (
+            <PrepareMealTab
             meals={meals}
             mealToPrepare={mealToPrepare}
             setMealToPrepare={setMealToPrepare}
@@ -794,6 +796,7 @@ export default function App() {
             priceTracker={priceTracker}
           />
         )}
+        </div>
       </main>
 
       <MealPlansModal
