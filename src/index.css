@@ -10,6 +10,7 @@ body,
 body {
   margin: 0;
   overflow-anchor: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .font-logo {
