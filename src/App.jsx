@@ -211,6 +211,27 @@ export default function App() {
 
     return !hasLocalData ? "planner" : "prepare";
   });
+
+  const plannerScrollRef = useRef(0);
+
+  const handleTabChange = useCallback(
+    (newTab) => {
+      if (activeTab === "planner") {
+        plannerScrollRef.current = window.scrollY;
+      }
+      setActiveTab(newTab);
+    },
+    [activeTab],
+  );
+
+  useEffect(() => {
+    if (activeTab === "planner") {
+      window.scrollTo(0, plannerScrollRef.current);
+    } else {
+      window.scrollTo(0, 0);
+    }
+  }, [activeTab]);
+
   const {
     user,
     meals,
@@ -691,7 +712,7 @@ export default function App() {
     <div className='min-h-screen bg-[#EFEFEF] text-slate-800 font-sans pb-20'>
       <Header
         activeTab={activeTab}
-        setActiveTab={setActiveTab}
+        setActiveTab={handleTabChange}
         isLoggedIn={Boolean(user)}
         hasActiveSavedPlan={hasActiveSavedPlan}
       />
@@ -715,7 +736,7 @@ export default function App() {
             }
             toggleSubstitutionRowSelection={toggleSubstitutionRowSelection}
             onSubstituteFoodButtonClick={handleSubstituteFoodButtonClick}
-            setActiveTab={setActiveTab}
+            setActiveTab={handleTabChange}
             trackerLast30DaysPercent={trackerLast30DaysPercent}
           />
         )}
@@ -723,7 +744,7 @@ export default function App() {
         {activeTab === "tracker" && (
           <TrackerCalendarTab
             trackerHistory={trackerHistory}
-            onBack={() => setActiveTab("prepare")}
+            onBack={() => handleTabChange("prepare")}
             currentPrepDateKey={prepStateDateKey}
             currentPrepSummary={currentPrepSummary}
           />
@@ -756,14 +777,14 @@ export default function App() {
             shoppingList={shoppingList}
             checkedShoppingItems={checkedShoppingItems}
             toggleShoppingItem={toggleShoppingItem}
-            setActiveTab={setActiveTab}
+            setActiveTab={handleTabChange}
             priceTracker={priceTracker}
           />
         )}
 
         {activeTab === "shopping-price-tracker" && (
           <ShoppingPriceTracker
-            onBack={() => setActiveTab("shopping")}
+            onBack={() => handleTabChange("shopping")}
             priceTracker={priceTracker}
           />
         )}
