@@ -8,7 +8,9 @@ It helps you:
 - See daily calories and macro totals while you plan
 - Set a calorie goal to avoid eating too little or too much
 - Follow your plan during meal prep in a clean checklist view
-- Generate a shopping list for a chosen number of days
+- Swap out meal food groups easily for convenience
+- Generate a shopping list and compare cost accross supermarkets
+- Review your adherence to the diet on a calendar
 
 ## Meal planning
 
@@ -44,8 +46,8 @@ As you edit grams, PrepMaster recalculates calories, carbs, fats, and protein in
 
 ### 3) Prepare meal
 
-In the `Prepare meal` tab, pick the meal you are about to prepare to view a checklist with the amount for each food group.
+In the `Prepare meal` tab, pick the meal you are about to prepare to view a checklist with the amount for each food group. You can also use the substitutions button to swap out food groups. Use the adherence button to track how consistently you've been sticking to your meal plan.
 
 ### 4) Shopping list
 
-In the `Shopping list` tab, choose how many days you are shopping for to get a list of how much to buy per food group.
+In the `Shopping list` tab, choose how many days you are shopping for to get a list of how much to buy per food group. It also includes a price tracker to help you find the best deals by comparing the estimated total cost across different stores.
