@@ -21,7 +21,7 @@ export default function Header({
         <div className='flex flex-col md:flex-row items-center justify-between gap-4'>
           <div className='hidden sm:flex items-center gap-3'>
             <div className={logoContainerClass}>
-              <ChefHat className='w-6 h-6' strokeWidth={2.75} />
+              <ChefHat className='w-8 h-8' strokeWidth={2.75} />
             </div>
             <h1 className='font-logo text-3xl sm:text-4xl leading-none uppercase text-black h-12 flex items-center translate-y-0.5'>
               <a
