@@ -6,8 +6,11 @@ export default function TrackerCalendarTab({
   onBack,
   currentPrepDateKey,
   currentPrepSummary,
+  canEditHistory,
+  onToggleDayCompletion,
 }) {
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [isEditMode, setIsEditMode] = useState(false);
 
   const daysInMonth = new Date(
     currentDate.getFullYear(),
@@ -38,11 +41,13 @@ export default function TrackerCalendarTab({
 
   const year = currentDate.getFullYear();
 
+  const getDateKeyForDay = (day) =>
+    `${year}-${String(currentDate.getMonth() + 1).padStart(2, "0")}-${String(
+      day,
+    ).padStart(2, "0")}`;
+
   const getDayData = (day) => {
-    const dateKey = `${year}-${String(currentDate.getMonth() + 1).padStart(
-      2,
-      "0",
-    )}-${String(day).padStart(2, "0")}`;
+    const dateKey = getDateKeyForDay(day);
 
     if (dateKey === currentPrepDateKey) {
       return currentPrepSummary;
@@ -196,12 +201,30 @@ export default function TrackerCalendarTab({
               textColor = "text-gray-400";
             }
 
+            // Today is driven by the live prep state, so only past days are editable.
+            const isEditable = isEditMode && isPastDay;
+
+            let editClasses = "";
+            if (isEditMode) {
+              editClasses = isEditable
+                ? isStreakDay
+                  ? "cursor-pointer"
+                  : "cursor-pointer border-4 border-dashed border-gray-400"
+                : "opacity-30";
+            }
+
             return (
               <div
                 key={i}
+                onClick={
+                  isEditable
+                    ? () =>
+                        onToggleDayCompletion(getDateKeyForDay(day), percent === 0)
+                    : undefined
+                }
                 className={`relative aspect-square flex items-center justify-center font-black text-lg ${
                   isStreakDay ? "border-4 border-black" : ""
-                } ${textColor}`}
+                } ${textColor} ${editClasses}`}
                 style={{
                   background:
                     percent > 0
@@ -215,8 +238,24 @@ export default function TrackerCalendarTab({
           })}
         </div>
       </div>
+      {canEditHistory && (
+        <div className='mt-6 flex justify-center'>
+          <button
+            type='button'
+            onClick={() => setIsEditMode((prev) => !prev)}
+            className={`w-50 px-5 py-3 sm:py-3 border-4 border-black text-sm sm:text-sm font-black uppercase tracking-wide transition-colors shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-x-1 active:translate-y-1 active:shadow-none ${
+              isEditMode
+                ? "bg-[#FFD600] text-black"
+                : "bg-white text-black hover:bg-[#FFF176]"
+            }`}
+          >
+            Edit
+          </button>
+        </div>
+      )}
+
       <div className='mt-8 text-center text-xs font-semibold text-gray-400'>
-        v0.4.6
+        v0.5
       </div>
     </div>
   );

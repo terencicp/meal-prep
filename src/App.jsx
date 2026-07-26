@@ -206,6 +206,22 @@ function calculateTrackerSummary(meals, checkedItemsByMeal) {
   };
 }
 
+function calculateFullCompletionSummary(meals) {
+  const allCheckedByMeal = {};
+
+  Object.entries(meals).forEach(([mealName, foodItems]) => {
+    const checked = {};
+    Object.keys(foodItems).forEach((foodId) => {
+      if (foodItems[foodId] > 0) {
+        checked[foodId] = foodItems[foodId];
+      }
+    });
+    allCheckedByMeal[mealName] = checked;
+  });
+
+  return calculateTrackerSummary(meals, allCheckedByMeal);
+}
+
 export default function App() {
   const [activeTab, setActiveTab] = useState(() => {
     const hasLocalData = hasStoredPlannerData();
@@ -253,8 +269,12 @@ export default function App() {
     syncWithGoogle,
     signOutUser,
   } = useSyncMeals();
-  const { syncTrackerToFirebase, loadTrackerHistory, trackerHistory } =
-    useSyncTracker();
+  const {
+    syncTrackerToFirebase,
+    clearTrackerDayInFirebase,
+    loadTrackerHistory,
+    trackerHistory,
+  } = useSyncTracker();
   const initialPrepStateRef = useRef(loadPrepStateFromLocalStorage());
   const [mealToPrepare, setMealToPrepare] = useState(getDefaultMealByLocalHour);
   const [checkedItemsByMeal, setCheckedItemsByMeal] = useState(
@@ -382,6 +402,19 @@ export default function App() {
     }
     return Math.round(sumPercentages / 30);
   }, [trackerHistory, currentPrepSummary, prepStateDateKey]);
+
+  const toggleTrackerDayCompletion = useCallback(
+    (dateKey, shouldComplete) => {
+      if (!user) return;
+
+      if (shouldComplete) {
+        syncTrackerToFirebase(dateKey, calculateFullCompletionSummary(meals));
+      } else {
+        clearTrackerDayInFirebase(dateKey);
+      }
+    },
+    [user, meals, syncTrackerToFirebase, clearTrackerDayInFirebase],
+  );
 
   const clearDailyPrepState = useCallback(() => {
     setCheckedItemsByMeal({});
@@ -755,6 +788,8 @@ export default function App() {
             onBack={() => handleTabChange("prepare")}
             currentPrepDateKey={prepStateDateKey}
             currentPrepSummary={currentPrepSummary}
+            canEditHistory={Boolean(user)}
+            onToggleDayCompletion={toggleTrackerDayCompletion}
           />
         )}
 
