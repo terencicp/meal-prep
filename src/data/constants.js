@@ -3,6 +3,8 @@ export const FOOD_GROUPS = [
   {
     id: "seeds",
     name: "Seeds",
+    description:
+      "Legumes and grains, cooked: lentils, chickpeas, rice, quinoa, etc.",
     kCal: 110,
     carbs: 24,
     fats: 0.9,
@@ -16,6 +18,7 @@ export const FOOD_GROUPS = [
   {
     id: "starches",
     name: "Starches",
+    description: "Starchy roots, cooked: potato, sweet potato, cassava, etc.",
     kCal: 80,
     carbs: 19,
     fats: 0.1,
@@ -29,6 +32,8 @@ export const FOOD_GROUPS = [
   {
     id: "veggies",
     name: "Veggies",
+    description:
+      "Mixed vegetables, cooked: broccoli, peppers, courgette, spinach, etc.",
     kCal: 35,
     carbs: 6,
     fats: 0.4,
@@ -42,6 +47,7 @@ export const FOOD_GROUPS = [
   {
     id: "fruit",
     name: "Fruit",
+    description: "Fresh fruit, raw: apple, banana, berries, orange, etc.",
     kCal: 54,
     carbs: 14,
     fats: 0.4,
@@ -55,6 +61,7 @@ export const FOOD_GROUPS = [
   {
     id: "avocado",
     name: "Avocado",
+    description: "Ripe avocado flesh, raw.",
     kCal: 160,
     carbs: 8.5,
     fats: 15,
@@ -68,6 +75,8 @@ export const FOOD_GROUPS = [
   {
     id: "nuts",
     name: "Nuts",
+    description:
+      "Dry nuts and seeds: almonds, walnuts, sunflower, pumpkin, etc.",
     kCal: 550,
     carbs: 23,
     fats: 46,
@@ -81,6 +90,7 @@ export const FOOD_GROUPS = [
   {
     id: "meat",
     name: "Meat",
+    description: "Meat and poultry, cooked: chicken, pork, beef, etc.",
     kCal: 230,
     carbs: 0,
     fats: 15,
@@ -94,6 +104,7 @@ export const FOOD_GROUPS = [
   {
     id: "yogurt",
     name: "Yogurt",
+    description: "Plain yogurt, unsweetened.",
     kCal: 60,
     carbs: 5,
     fats: 2,
@@ -107,6 +118,7 @@ export const FOOD_GROUPS = [
   {
     id: "eggs",
     name: "Eggs",
+    description: "Whole eggs, boiled.",
     kCal: 155,
     carbs: 1.1,
     fats: 11,
