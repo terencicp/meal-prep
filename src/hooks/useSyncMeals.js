@@ -21,19 +21,26 @@ import {
   LOCAL_STORAGE_FOOD_GROUPS_KEY,
   LOCAL_STORAGE_MEALS_KEY,
   LOCAL_STORAGE_SETTINGS_KEY,
+  MEAL_NAMES,
+  PLAN_DESCRIPTION_MAX_LENGTH,
+  PLAN_NAME_MAX_LENGTH,
 } from "../data/constants";
 import {
   EMPTY_FOOD_GROUP_CATALOG,
   MAX_CUSTOM_FOOD_GROUPS,
   countFoodGroupUsage,
   createCustomFoodGroupId,
-  hasFoodGroupCatalogContent,
   moveIdInOrder,
   normalizeFoodGroupCatalog,
   removeFoodGroupFromMeals,
   resolveAllFoodGroups,
   resolveVisibleFoodGroups,
 } from "../data/foodGroups";
+
+const EMPTY_MEALS = MEAL_NAMES.reduce(
+  (acc, mealName) => ({ ...acc, [mealName]: {} }),
+  {},
+);
 
 function normalizePositiveNumber(value, fallback) {
   return typeof value === "number" && Number.isFinite(value) && value > 0
@@ -55,7 +62,42 @@ function normalizePlanName(value) {
   }
 
   const trimmed = value.trim();
-  return trimmed.length > 0 ? trimmed : "Meal plan";
+  return trimmed.length > 0
+    ? trimmed.slice(0, PLAN_NAME_MAX_LENGTH)
+    : "Meal plan";
+}
+
+function normalizePlanDescription(value) {
+  return typeof value === "string"
+    ? value.trim().slice(0, PLAN_DESCRIPTION_MAX_LENGTH)
+    : "";
+}
+
+// The three catalog fields live on the plan doc now. They also still exist on
+// legacy user docs, where the same reader handles the one-time migration.
+function readCatalogFields(data) {
+  const hasCatalog =
+    Array.isArray(data?.customFoodGroups) ||
+    Array.isArray(data?.hiddenFoodGroupIds) ||
+    Array.isArray(data?.foodGroupOrder);
+
+  if (!hasCatalog) {
+    return null;
+  }
+
+  return normalizeFoodGroupCatalog({
+    custom: data.customFoodGroups,
+    hidden: data.hiddenFoodGroupIds,
+    order: data.foodGroupOrder,
+  });
+}
+
+function toCatalogFields(catalog) {
+  return {
+    customFoodGroups: catalog.custom,
+    hiddenFoodGroupIds: catalog.hidden,
+    foodGroupOrder: catalog.order,
+  };
 }
 
 function toDateOrNull(value) {
@@ -159,6 +201,17 @@ function loadFoodGroupCatalogFromLocalStorage() {
   }
 }
 
+function persistFoodGroupCatalogToLocalStorage(nextCatalog) {
+  try {
+    localStorage.setItem(
+      LOCAL_STORAGE_FOOD_GROUPS_KEY,
+      JSON.stringify({ v: 1, ...nextCatalog }),
+    );
+  } catch (error) {
+    console.error("Failed to save food groups to localStorage:", error);
+  }
+}
+
 function shouldRestorePreviousAuthSession() {
   try {
     return localStorage.getItem(LOCAL_STORAGE_AUTH_ACTIVE_KEY) === "true";
@@ -232,34 +285,10 @@ export function useSyncMeals() {
     }
   };
 
-  const persistFoodGroupCatalogToLocalStorage = (nextCatalog) => {
-    try {
-      localStorage.setItem(
-        LOCAL_STORAGE_FOOD_GROUPS_KEY,
-        JSON.stringify({ v: 1, ...nextCatalog }),
-      );
-    } catch (error) {
-      console.error("Failed to save food groups to localStorage:", error);
-    }
-  };
-
-  const syncFoodGroupCatalogToFirestore = (nextCatalog, uid) => {
-    if (!db || !uid) {
-      return;
-    }
-
-    void setDoc(
-      doc(db, "users", uid),
-      {
-        customFoodGroups: nextCatalog.custom,
-        hiddenFoodGroupIds: nextCatalog.hidden,
-        foodGroupOrder: nextCatalog.order,
-        updatedAt: serverTimestamp(),
-      },
-      { merge: true },
-    ).catch((error) => {
-      console.error("Failed to sync food groups to Firestore:", error);
-    });
+  const applyCatalogLocally = (nextCatalog) => {
+    foodGroupCatalogRef.current = nextCatalog;
+    setFoodGroupCatalog(nextCatalog);
+    persistFoodGroupCatalogToLocalStorage(nextCatalog);
   };
 
   const ensureAuthReady = async () => {
@@ -328,37 +357,13 @@ export function useSyncMeals() {
 
         const userData = userSnapshot.exists() ? userSnapshot.data() : null;
 
-        // The remote catalog wins when it exists; otherwise a catalog built
-        // while signed out is pushed up on this first sign-in.
-        const localCatalog = foodGroupCatalogRef.current;
-        const hasRemoteCatalog = Boolean(
-          userData &&
-            (Array.isArray(userData.customFoodGroups) ||
-              Array.isArray(userData.hiddenFoodGroupIds) ||
-              Array.isArray(userData.foodGroupOrder)),
-        );
-        let effectiveCatalog = localCatalog;
-
-        if (hasRemoteCatalog) {
-          effectiveCatalog = normalizeFoodGroupCatalog({
-            custom: userData.customFoodGroups,
-            hidden: userData.hiddenFoodGroupIds,
-            order: userData.foodGroupOrder,
-          });
-          foodGroupCatalogRef.current = effectiveCatalog;
-          setFoodGroupCatalog(effectiveCatalog);
-          persistFoodGroupCatalogToLocalStorage(effectiveCatalog);
-        } else if (hasFoodGroupCatalogContent(localCatalog)) {
-          syncFoodGroupCatalogToFirestore(localCatalog, user.uid);
-        }
-
-        const effectiveFoodGroups = resolveVisibleFoodGroups(effectiveCatalog);
-        const plans = plansSnapshot.docs
+        const rawPlans = plansSnapshot.docs
           .map((planDoc) => {
             const data = planDoc.data();
             return {
               id: planDoc.id,
               name: normalizePlanName(data?.name),
+              description: normalizePlanDescription(data?.description),
               meals: normalizeMealPlan(data?.meals),
               calorieGoal: normalizePositiveNumber(
                 data?.calorieGoal,
@@ -368,27 +373,42 @@ export function useSyncMeals() {
                 data?.prepDays,
                 DEFAULT_PREP_DAYS,
               ),
-              totalKcal: normalizePositiveNumber(
-                data?.totalKcal,
-                calculatePlanCalories(
-                  normalizeMealPlan(data?.meals),
-                  effectiveFoodGroups,
-                ),
-              ),
+              storedTotalKcal: data?.totalKcal,
+              ownCatalog: readCatalogFields(data),
               createdAt: toDateOrNull(data?.createdAt),
               updatedAt: toDateOrNull(data?.updatedAt),
             };
           })
           .sort(comparePlansByRecent);
 
-        setMealPlans(plans);
-
-        if (plans.length === 0) {
+        if (rawPlans.length === 0) {
+          setMealPlans([]);
           setActivePlanId(null);
           setIsInitialPlanSetupRequired(true);
           return;
         }
 
+        // Plans saved before they owned a catalog simply start from the
+        // predefined groups.
+        const plans = rawPlans.map(
+          ({ ownCatalog, storedTotalKcal, ...plan }) => {
+            const catalog = ownCatalog || EMPTY_FOOD_GROUP_CATALOG;
+
+            return {
+              ...plan,
+              catalog,
+              totalKcal: normalizePositiveNumber(
+                storedTotalKcal,
+                calculatePlanCalories(
+                  plan.meals,
+                  resolveVisibleFoodGroups(catalog),
+                ),
+              ),
+            };
+          },
+        );
+
+        setMealPlans(plans);
         setIsInitialPlanSetupRequired(false);
 
         const preferredPlanId =
@@ -401,6 +421,7 @@ export function useSyncMeals() {
         setActivePlanId(selectedPlan.id);
         setMeals(selectedPlan.meals);
         persistMealsToLocalStorage(selectedPlan.meals);
+        applyCatalogLocally(selectedPlan.catalog);
 
         const selectedSettings = {
           calorieGoal: selectedPlan.calorieGoal,
@@ -529,95 +550,56 @@ export function useSyncMeals() {
     updateSettingField("prepDays", value, normalizePositiveInteger);
   };
 
+  // The catalog belongs to the active plan, so it rides along with the plan
+  // doc and keeps the denormalized calories in the same write.
   const applyFoodGroupCatalog = (nextRawCatalog) => {
     const nextCatalog = normalizeFoodGroupCatalog(nextRawCatalog);
 
-    foodGroupCatalogRef.current = nextCatalog;
-    setFoodGroupCatalog(nextCatalog);
-    persistFoodGroupCatalogToLocalStorage(nextCatalog);
-    syncFoodGroupCatalogToFirestore(nextCatalog, user?.uid);
+    applyCatalogLocally(nextCatalog);
 
-    return nextCatalog;
-  };
-
-  // Keeps the denormalized plan calories in step when the catalog itself
-  // changes. Reordering leaves the number untouched, so it writes nothing.
-  const reconcileActivePlanTotals = (nextFoodGroups) => {
     if (!db || !user?.uid || !activePlanId) {
-      return;
+      return nextCatalog;
     }
 
-    const nextTotalKcal = calculatePlanCalories(meals, nextFoodGroups);
-    const activePlan = mealPlans.find((plan) => plan.id === activePlanId);
-    if (activePlan && Math.round(activePlan.totalKcal || 0) === nextTotalKcal) {
-      return;
-    }
+    const nextTotalKcal = calculatePlanCalories(
+      meals,
+      resolveVisibleFoodGroups(nextCatalog),
+    );
 
     void updateDoc(doc(db, "users", user.uid, "mealPlans", activePlanId), {
+      ...toCatalogFields(nextCatalog),
       totalKcal: nextTotalKcal,
       updatedAt: serverTimestamp(),
     }).catch((error) => {
-      console.error("Failed to sync plan calories to Firestore:", error);
+      console.error("Failed to sync food groups to the active plan:", error);
     });
 
     setMealPlans((prevPlans) =>
       prevPlans
         .map((plan) =>
           plan.id === activePlanId
-            ? { ...plan, totalKcal: nextTotalKcal, updatedAt: new Date() }
+            ? {
+                ...plan,
+                catalog: nextCatalog,
+                totalKcal: nextTotalKcal,
+                updatedAt: new Date(),
+              }
             : plan,
         )
         .sort(comparePlansByRecent),
     );
+
+    return nextCatalog;
   };
 
-  // Hiding or deleting a group clears its grams from every plan we know about,
-  // so totals and checklists never count food that is no longer visible.
+  // Hiding or deleting a group clears its grams, so totals and checklists never
+  // count food that is no longer visible. Only this plan is affected.
   const purgeFoodGroupFromMeals = (foodGroupId) => {
-    if (mealsIncludeFoodGroup(meals, foodGroupId)) {
-      updateMeals((prev) => removeFoodGroupFromMeals(prev, foodGroupId));
-    }
-
-    if (!db || !user?.uid) {
+    if (!mealsIncludeFoodGroup(meals, foodGroupId)) {
       return;
     }
 
-    const strippedPlansById = new Map();
-    mealPlans.forEach((plan) => {
-      if (plan.id === activePlanId || !mealsIncludeFoodGroup(plan.meals, foodGroupId)) {
-        return;
-      }
-
-      const nextMeals = removeFoodGroupFromMeals(plan.meals, foodGroupId);
-      const nextTotalKcal = calculatePlanCalories(nextMeals, foodGroups);
-      strippedPlansById.set(plan.id, {
-        meals: nextMeals,
-        totalKcal: nextTotalKcal,
-      });
-
-      void updateDoc(doc(db, "users", user.uid, "mealPlans", plan.id), {
-        meals: nextMeals,
-        totalKcal: nextTotalKcal,
-        updatedAt: serverTimestamp(),
-      }).catch((error) => {
-        console.error("Failed to remove food group from meal plan:", error);
-      });
-    });
-
-    if (strippedPlansById.size === 0) {
-      return;
-    }
-
-    setMealPlans((prevPlans) =>
-      prevPlans
-        .map((plan) => {
-          const stripped = strippedPlansById.get(plan.id);
-          return stripped
-            ? { ...plan, ...stripped, updatedAt: new Date() }
-            : plan;
-        })
-        .sort(comparePlansByRecent),
-    );
+    updateMeals((prev) => removeFoodGroupFromMeals(prev, foodGroupId));
   };
 
   const addFoodGroup = (draft) => {
@@ -638,14 +620,13 @@ export function useSyncMeals() {
 
   const updateFoodGroup = (id, draft) => {
     const catalog = foodGroupCatalogRef.current;
-    const nextCatalog = applyFoodGroupCatalog({
+
+    applyFoodGroupCatalog({
       ...catalog,
       custom: catalog.custom.map((food) =>
         food.id === id ? { ...food, ...draft, id } : food,
       ),
     });
-
-    reconcileActivePlanTotals(resolveVisibleFoodGroups(nextCatalog));
   };
 
   const deleteFoodGroup = (id) => {
@@ -686,42 +667,77 @@ export function useSyncMeals() {
 
   const getFoodGroupUsage = (id) => ({
     mealCount: countFoodGroupUsage(meals, id),
-    planCount: mealPlans.filter(
-      (plan) => countFoodGroupUsage(plan.meals, id) > 0,
-    ).length,
   });
 
-  const createMealPlan = async (name) => {
+  // "current" turns whatever is on screen into a saved plan (the first sign-in),
+  // "new" starts from scratch, "duplicate" copies the active plan wholesale.
+  const buildPlanSource = (mode) => {
+    if (mode === "new") {
+      return {
+        meals: EMPTY_MEALS,
+        catalog: EMPTY_FOOD_GROUP_CATALOG,
+        calorieGoal: DEFAULT_CALORIE_GOAL,
+        prepDays: DEFAULT_PREP_DAYS,
+      };
+    }
+
+    const activePlan = mealPlans.find((plan) => plan.id === activePlanId);
+    if (mode === "duplicate" && activePlan) {
+      return {
+        meals: activePlan.meals,
+        catalog: normalizeFoodGroupCatalog(activePlan.catalog),
+        calorieGoal: activePlan.calorieGoal,
+        prepDays: activePlan.prepDays,
+      };
+    }
+
+    return {
+      meals,
+      catalog: foodGroupCatalogRef.current,
+      calorieGoal: settings.calorieGoal,
+      prepDays: settings.prepDays,
+    };
+  };
+
+  const createMealPlan = async ({ name, description, mode } = {}) => {
     if (!db || !user?.uid) {
       return null;
     }
 
     const normalizedName = normalizePlanName(name);
+    const normalizedDescription = normalizePlanDescription(description);
+    const source = buildPlanSource(mode);
     const now = new Date();
-    const totalKcal = calculatePlanCalories(meals, foodGroups);
-    const payload = {
-      name: normalizedName,
-      meals,
-      calorieGoal: settings.calorieGoal,
-      prepDays: settings.prepDays,
-      totalKcal,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-    };
+    const totalKcal = calculatePlanCalories(
+      source.meals,
+      resolveVisibleFoodGroups(source.catalog),
+    );
 
     try {
       const planDocRef = await addDoc(
         collection(db, "users", user.uid, "mealPlans"),
-        payload,
+        {
+          name: normalizedName,
+          description: normalizedDescription,
+          meals: source.meals,
+          calorieGoal: source.calorieGoal,
+          prepDays: source.prepDays,
+          totalKcal,
+          ...toCatalogFields(source.catalog),
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        },
       );
 
       const nextPlan = {
         id: planDocRef.id,
         name: normalizedName,
-        meals,
-        calorieGoal: settings.calorieGoal,
-        prepDays: settings.prepDays,
+        description: normalizedDescription,
+        meals: source.meals,
+        calorieGoal: source.calorieGoal,
+        prepDays: source.prepDays,
         totalKcal,
+        catalog: source.catalog,
         createdAt: now,
         updatedAt: now,
       };
@@ -731,6 +747,19 @@ export function useSyncMeals() {
       );
       setActivePlanId(planDocRef.id);
       setIsInitialPlanSetupRequired(false);
+
+      // A new or duplicated plan becomes the active one, so the planner has to
+      // follow it instead of keeping the previous plan's numbers on screen.
+      setMeals(source.meals);
+      persistMealsToLocalStorage(source.meals);
+      applyCatalogLocally(source.catalog);
+
+      const nextSettings = {
+        calorieGoal: source.calorieGoal,
+        prepDays: source.prepDays,
+      };
+      setSettings(nextSettings);
+      persistSettingsToLocalStorage(nextSettings);
 
       await setDoc(
         doc(db, "users", user.uid),
@@ -745,6 +774,36 @@ export function useSyncMeals() {
     } catch (error) {
       console.error("Failed to create meal plan:", error);
       return null;
+    }
+  };
+
+  const updateMealPlanDetails = async (planId, { name, description }) => {
+    if (!db || !user?.uid) {
+      return;
+    }
+
+    const nextDetails = {
+      name: normalizePlanName(name),
+      description: normalizePlanDescription(description),
+    };
+
+    setMealPlans((prevPlans) =>
+      prevPlans
+        .map((plan) =>
+          plan.id === planId
+            ? { ...plan, ...nextDetails, updatedAt: new Date() }
+            : plan,
+        )
+        .sort(comparePlansByRecent),
+    );
+
+    try {
+      await updateDoc(doc(db, "users", user.uid, "mealPlans", planId), {
+        ...nextDetails,
+        updatedAt: serverTimestamp(),
+      });
+    } catch (error) {
+      console.error("Failed to update meal plan details:", error);
     }
   };
 
@@ -775,6 +834,7 @@ export function useSyncMeals() {
 
     setSettings(nextSettings);
     persistSettingsToLocalStorage(nextSettings);
+    applyCatalogLocally(normalizeFoodGroupCatalog(selectedPlan.catalog));
     setIsInitialPlanSetupRequired(false);
 
     try {
@@ -887,6 +947,7 @@ export function useSyncMeals() {
     isPlansLoading,
     isInitialPlanSetupRequired,
     createMealPlan,
+    updateMealPlanDetails,
     selectMealPlan,
     deleteMealPlan,
     syncWithGoogle,

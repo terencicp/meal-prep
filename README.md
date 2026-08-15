@@ -34,7 +34,17 @@ The `Food groups` button at the bottom of the `Plan meals` tab opens a modal whe
 - **Hide any group** you are not using right now, predefined or custom, and show it again at any time.
 - **Reorder every group** with the up and down arrows. The order applies to the planner, the prep checklist, and the shopping list.
 
-Hiding or deleting a group that still has grams in a meal asks for confirmation first and then clears those grams, so totals always match what you see. The catalog is shared across all your meal plans and is stored locally, syncing to your account when you are signed in.
+Hiding or deleting a group that still has grams in a meal clears those grams, so totals always match what you see. **Food groups belong to the meal plan you are on**, so a cutting plan and a bulking plan can each have their own list. They are stored locally and sync to your account when you are signed in.
+
+## Meal plans
+
+The `Meal plans` button, next to `Food groups`, lists every plan on your account. Each one holds its own meals, food groups, calorie goal and prep days, and can carry a short description.
+
+- **New plan** starts clean: the predefined food groups, 0 g everywhere, and the default calorie goal.
+- **Duplicate plan** copies the plan you are on, food groups and grams included, so you can vary one thing without rebuilding the rest.
+- Tap a plan to switch to it, or the pencil to rename it, edit its description, or delete it.
+
+The first time you sign in, the plan you have been building locally is saved as your first meal plan.
 
 ## How it works
 

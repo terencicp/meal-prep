@@ -273,7 +273,9 @@ export default function App() {
     mealPlans,
     activePlanId,
     isPlansLoading,
+    isInitialPlanSetupRequired,
     createMealPlan,
+    updateMealPlanDetails,
     selectMealPlan,
     deleteMealPlan,
     syncWithGoogle,
@@ -306,9 +308,9 @@ export default function App() {
   const [checkedShoppingItems, setCheckedShoppingItems] = useState({});
   const [isMealPlansModalVisible, setIsMealPlansModalVisible] = useState(false);
   const [isFoodGroupsModalOpen, setIsFoodGroupsModalOpen] = useState(false);
-  const [planNameInput, setPlanNameInput] = useState("");
 
   const isMealPlansModalOpen = Boolean(user) && isMealPlansModalVisible;
+  const isFoodGroupsModalVisible = Boolean(user) && isFoodGroupsModalOpen;
   const hasActiveSavedPlan = Boolean(user && activePlanId);
   const visibleFoodIds = useMemo(
     () => foodGroups.map((food) => food.id),
@@ -319,6 +321,15 @@ export default function App() {
     : activePlanId
       ? mealPlans.find((plan) => plan.id === activePlanId)?.name || "Meal plan"
       : "Unsaved plan";
+
+  // A signed-in account with no plans yet needs to save the one on screen
+  // before anything else in the modal makes sense.
+  useEffect(() => {
+    if (isInitialPlanSetupRequired) {
+      setIsMealPlansModalVisible(true);
+    }
+  }, [isInitialPlanSetupRequired]);
+
   const checkedItems = checkedItemsByMeal[mealToPrepare] || {};
   const substitutionsForMeal = prepSubstitutionsByMeal[mealToPrepare] || [];
   const isSubstitutionModalOpen = Boolean(substitutionModalContext.isOpen);
@@ -686,7 +697,6 @@ export default function App() {
     const signedOut = await signOutUser();
     if (signedOut) {
       setIsMealPlansModalVisible(false);
-      setPlanNameInput("");
     }
   };
 
@@ -694,14 +704,17 @@ export default function App() {
     setIsMealPlansModalVisible(false);
   };
 
-  const handleSaveMealPlan = async () => {
-    const createdPlanId = await createMealPlan(planNameInput);
+  const handleCreateMealPlan = async (details) => {
+    const createdPlanId = await createMealPlan(details);
     if (!createdPlanId) {
       return;
     }
 
-    setPlanNameInput("");
     setIsMealPlansModalVisible(false);
+  };
+
+  const handleUpdateMealPlan = async (planId, details) => {
+    await updateMealPlanDetails(planId, details);
   };
 
   const handleSelectMealPlan = async (planId) => {
@@ -835,16 +848,16 @@ export default function App() {
         onClose={closeMealPlansModal}
         mealPlans={mealPlans}
         activePlanId={activePlanId}
-        planNameInput={planNameInput}
-        setPlanNameInput={setPlanNameInput}
         isPlansLoading={isPlansLoading}
-        onSavePlan={handleSaveMealPlan}
+        isInitialPlanSetupRequired={isInitialPlanSetupRequired}
+        onCreatePlan={handleCreateMealPlan}
+        onUpdatePlan={handleUpdateMealPlan}
         onSelectPlan={handleSelectMealPlan}
         onDeletePlan={handleDeleteMealPlan}
       />
 
       <FoodGroupsModal
-        isOpen={isFoodGroupsModalOpen}
+        isOpen={isFoodGroupsModalVisible}
         onClose={() => setIsFoodGroupsModalOpen(false)}
         allFoodGroups={allFoodGroups}
         onAdd={addFoodGroup}

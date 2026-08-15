@@ -262,20 +262,19 @@ export default function PlannerTab({
 
       <div className='w-full flex flex-col items-center gap-4 pt-1'>
         <div className='w-full max-w-md sm:max-w-lg flex items-center justify-center gap-1.5 sm:gap-3'>
-          <button
-            onClick={onOpenFoodGroups}
-            className={`${bottomButtonClass} bg-white`}
-          >
-            Food groups
-          </button>
-
           {user ? (
             <>
               <button
                 onClick={onOpenMealPlans}
                 className={`${bottomButtonClass} bg-white`}
               >
-                Meal plans
+                Plans
+              </button>
+              <button
+                onClick={onOpenFoodGroups}
+                className={`${bottomButtonClass} bg-white`}
+              >
+                Foods
               </button>
               <button
                 onClick={onSignOut}
@@ -287,7 +286,7 @@ export default function PlannerTab({
           ) : (
             <button
               onClick={onSignIn}
-              className={`${bottomButtonClass} bg-[#FFD600]`}
+              className={`${bottomButtonClass} bg-[#FFD600] sm:flex-none sm:px-10`}
             >
               Sync with Google
             </button>

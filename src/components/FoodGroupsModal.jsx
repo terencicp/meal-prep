@@ -39,9 +39,7 @@ function buildDeleteMessage(usage) {
     return "Delete this food group?";
   }
 
-  const plans =
-    usage.planCount > 1 ? ` across ${usage.planCount} saved plans` : "";
-  return `Used in ${usage.mealCount} meal${usage.mealCount === 1 ? "" : "s"}${plans}. Deleting sets those grams to 0.`;
+  return `Used in ${usage.mealCount} meal${usage.mealCount === 1 ? "" : "s"} of this plan. Deleting sets those grams to 0.`;
 }
 
 export default function FoodGroupsModal({
@@ -172,7 +170,11 @@ export default function FoodGroupsModal({
       <div className='relative z-10 w-full max-w-2xl bg-white border-4 border-black shadow-[9px_9px_0px_0px_rgba(0,0,0,1)] overflow-hidden'>
         <div className='flex items-start justify-between px-4 py-4 sm:px-6 sm:py-5 border-b-4 border-black bg-[#FFD600]'>
           <h2 className='text-xl sm:text-2xl font-black uppercase tracking-wide text-black'>
-            Food groups
+            {isFormOpen
+              ? editingId
+                ? "Edit food group"
+                : "New food group"
+              : "Food groups"}
           </h2>
           <button
             type='button'
@@ -284,10 +286,6 @@ export default function FoodGroupsModal({
         {isFormOpen && (
           <div className='px-4 py-4 sm:px-6 sm:py-5 bg-white'>
             <form className='space-y-3' onSubmit={handleSubmit}>
-              <h3 className='text-sm md:text-base font-black uppercase tracking-wide text-black'>
-                {editingId ? "Edit food group" : "New food group"}
-              </h3>
-
               {renderField("name", "Name", {
                 placeholder: "Tofu",
                 maxLength: FOOD_GROUP_NAME_MAX_LENGTH,
@@ -332,8 +330,7 @@ export default function FoodGroupsModal({
                   placeholder: "1",
                 })}
                 <p className='mt-1 text-xs font-bold text-black/60'>
-                  Shopping buys this much extra to cover peel and trim. 1 = no
-                  loss.
+                  Shopping multiplier to cover waste (1 = no loss)
                 </p>
               </div>
 

@@ -133,15 +133,6 @@ export function normalizeFoodGroupCatalog(raw) {
   };
 }
 
-export function hasFoodGroupCatalogContent(catalog) {
-  return Boolean(
-    catalog &&
-    (catalog.custom?.length > 0 ||
-      catalog.hidden?.length > 0 ||
-      catalog.order?.length > 0),
-  );
-}
-
 export function resolveAllFoodGroups(catalogInput) {
   const catalog = normalizeFoodGroupCatalog(catalogInput);
   const hiddenIds = new Set(catalog.hidden);

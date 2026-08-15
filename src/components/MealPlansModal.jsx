@@ -1,5 +1,20 @@
 import React, { useMemo, useState } from "react";
-import { Trash2, X } from "lucide-react";
+import { Pencil, X } from "lucide-react";
+import {
+  PLAN_DESCRIPTION_MAX_LENGTH,
+  PLAN_NAME_MAX_LENGTH,
+} from "../data/constants";
+
+const EMPTY_DRAFT = { name: "", description: "" };
+
+const inputClass =
+  "w-full px-3 py-2.5 border-4 border-black bg-white text-sm md:text-base font-bold text-black placeholder:text-slate-500 focus:outline-none focus:bg-[#FFD600]";
+const labelClass =
+  "block text-xs font-black uppercase tracking-wide text-black mb-1.5";
+const formButtonClass =
+  "flex-1 px-4 py-2.5 border-4 border-black text-sm font-black uppercase tracking-wide";
+const listButtonClass =
+  "px-4 py-2.5 border-4 border-black bg-black text-white text-sm font-black uppercase tracking-wide transition-transform hover:translate-x-px hover:translate-y-px disabled:opacity-60 disabled:cursor-not-allowed";
 
 function formatCreatedAt(dateValue) {
   if (!(dateValue instanceof Date) || Number.isNaN(dateValue.getTime())) {
@@ -19,14 +34,20 @@ export default function MealPlansModal({
   onClose,
   mealPlans,
   activePlanId,
-  planNameInput,
-  setPlanNameInput,
   isPlansLoading,
-  onSavePlan,
+  isInitialPlanSetupRequired,
+  onCreatePlan,
+  onUpdatePlan,
   onSelectPlan,
   onDeletePlan,
 }) {
-  const [pendingDeleteId, setPendingDeleteId] = useState(null);
+  // "current" only shows up on the very first sign-in, when the plan on screen
+  // has nowhere to live yet.
+  const [mode, setMode] = useState(null);
+  const [editingId, setEditingId] = useState(null);
+  const [draft, setDraft] = useState(EMPTY_DRAFT);
+  const [showErrors, setShowErrors] = useState(false);
+  const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
 
   const sortedPlans = useMemo(() => {
     return [...mealPlans].sort((a, b) => {
@@ -40,36 +61,90 @@ export default function MealPlansModal({
     return null;
   }
 
-  const handleBackdropClick = () => {
-    if (canClose) {
-      onClose();
-    }
+  const activePlan = mealPlans.find((plan) => plan.id === activePlanId) || null;
+  const formMode = isInitialPlanSetupRequired ? "current" : mode;
+  const isFormOpen = Boolean(formMode);
+  const nameError = draft.name.trim() ? null : "Required";
+
+  const closeForm = () => {
+    setMode(null);
+    setEditingId(null);
+    setDraft(EMPTY_DRAFT);
+    setShowErrors(false);
+    setIsConfirmingDelete(false);
   };
 
-  const handleCardClick = (planId) => {
-    if (pendingDeleteId === planId) {
+  const handleClose = () => {
+    if (!canClose) {
       return;
     }
 
-    void onSelectPlan(planId);
-    setPendingDeleteId(null);
+    closeForm();
+    onClose();
   };
 
-  const handleDeleteClick = (event, planId) => {
-    event.stopPropagation();
-    setPendingDeleteId(planId);
+  const openCreateForm = (nextMode) => {
+    setIsConfirmingDelete(false);
+    setEditingId(null);
+    setShowErrors(false);
+    setDraft(
+      nextMode === "duplicate" && activePlan
+        ? {
+            name: `Copy of ${activePlan.name}`.slice(0, PLAN_NAME_MAX_LENGTH),
+            description: activePlan.description || "",
+          }
+        : EMPTY_DRAFT,
+    );
+    setMode(nextMode);
   };
 
-  const handleDeleteConfirm = async (event, planId) => {
-    event.stopPropagation();
+  const openEditForm = (plan) => {
+    setIsConfirmingDelete(false);
+    setEditingId(plan.id);
+    setShowErrors(false);
+    setDraft({ name: plan.name, description: plan.description || "" });
+    setMode("edit");
+  };
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+
+    if (nameError) {
+      setShowErrors(true);
+      return;
+    }
+
+    const details = {
+      name: draft.name.trim(),
+      description: draft.description.trim(),
+    };
+
+    if (formMode === "edit") {
+      await onUpdatePlan(editingId, details);
+      closeForm();
+      return;
+    }
+
+    closeForm();
+    await onCreatePlan({ ...details, mode: formMode });
+  };
+
+  const confirmDelete = async () => {
+    const planId = editingId;
+    closeForm();
     await onDeletePlan(planId);
-    setPendingDeleteId(null);
   };
 
-  const handleDeleteCancel = (event) => {
-    event.stopPropagation();
-    setPendingDeleteId(null);
+  const handleCardClick = (planId) => {
+    void onSelectPlan(planId);
   };
+
+  const formTitle = {
+    current: "Save current plan",
+    new: "New plan",
+    duplicate: "Duplicate plan",
+    edit: "Edit plan",
+  }[formMode];
 
   return (
     <div className='fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4'>
@@ -77,7 +152,7 @@ export default function MealPlansModal({
         type='button'
         aria-label='Close meal plans modal background'
         className='absolute inset-0 bg-black/85'
-        onClick={handleBackdropClick}
+        onClick={handleClose}
       />
 
       <div className='relative z-10 w-full max-w-2xl bg-white border-4 border-black shadow-[9px_9px_0px_0px_rgba(0,0,0,1)] overflow-hidden'>
@@ -87,7 +162,7 @@ export default function MealPlansModal({
           </h2>
           <button
             type='button'
-            onClick={onClose}
+            onClick={handleClose}
             className='border-4 border-black bg-white p-1 text-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-transform hover:translate-x-px hover:translate-y-px disabled:opacity-50 disabled:cursor-not-allowed'
             aria-label='Close meal plans modal'
             disabled={!canClose}
@@ -96,48 +171,12 @@ export default function MealPlansModal({
           </button>
         </div>
 
-        <div className='px-4 py-4 sm:px-6 sm:py-5 border-b-4 border-black bg-white'>
-          <h3 className='text-sm md:text-base font-black uppercase tracking-wide text-black mb-2.5'>
-            Save current plan
-          </h3>
-          <form
-            className='flex flex-col sm:flex-row gap-2.5'
-            onSubmit={(event) => {
-              event.preventDefault();
-              void onSavePlan();
-            }}
-          >
-            <input
-              value={planNameInput}
-              onChange={(event) => setPlanNameInput(event.target.value)}
-              placeholder='Plan name'
-              className='flex-1 px-3 py-2.5 border-4 border-black bg-white text-sm md:text-base font-bold text-black placeholder:text-slate-500 focus:outline-none focus:bg-[#FFD600]'
-              maxLength={70}
-            />
-            <button
-              type='submit'
-              disabled={isPlansLoading}
-              className='px-6 py-2.5 border-4 border-black bg-black text-white text-sm md:text-base font-black uppercase tracking-wide transition-transform hover:translate-x-px hover:translate-y-px disabled:opacity-60 disabled:cursor-not-allowed'
-            >
-              SAVE
-            </button>
-          </form>
-        </div>
-
-        {sortedPlans.length > 0 && (
+        {/* The list steps aside while a plan form is open. */}
+        {!isFormOpen && (
           <div className='px-4 py-4 sm:px-6 sm:py-5 bg-[#F7F7F7]'>
-            <h3 className='text-sm md:text-base font-black uppercase tracking-wide text-black mb-3'>
-              Load saved plan
-            </h3>
-
             <div className='max-h-90 overflow-y-auto pr-1 space-y-3'>
               {sortedPlans.map((plan) => {
-                const isPendingDelete = pendingDeleteId === plan.id;
                 const isActive = activePlanId === plan.id;
-                const kcalLabel = `${Math.round(plan.totalKcal || 0)}Kcal`;
-                const kcalPillClass = isActive
-                  ? "bg-[#FFD600] text-black"
-                  : "bg-white text-black";
 
                 return (
                   <button
@@ -151,86 +190,182 @@ export default function MealPlansModal({
                     }`}
                   >
                     <div className='flex items-center justify-between gap-3'>
-                      <div>
+                      <div className='min-w-0'>
                         <div className='text-lg md:text-xl font-black uppercase tracking-wide text-black leading-tight'>
                           {plan.name}
                         </div>
-                        <div className='text-xs md:text-sm font-bold text-black/70 mt-1'>
+                        {plan.description && (
+                          <div className='text-xs md:text-sm font-bold text-black/70 mt-1'>
+                            {plan.description}
+                          </div>
+                        )}
+                        <div className='text-xs md:text-sm font-bold text-black/50 mt-1'>
                           {formatCreatedAt(plan.createdAt)}
                         </div>
                       </div>
 
                       <div className='flex items-center gap-2 sm:gap-3 shrink-0'>
                         <span
-                          className={`h-10 px-3 inline-flex items-center border-2 border-black text-xs md:text-sm font-black uppercase tracking-wide ${kcalPillClass}`}
+                          className={`h-10 px-3 inline-flex items-center border-2 border-black text-xs md:text-sm font-black uppercase tracking-wide ${
+                            isActive
+                              ? "bg-[#FFD600] text-black"
+                              : "bg-white text-black"
+                          }`}
                         >
-                          {kcalLabel}
+                          {`${Math.round(plan.totalKcal || 0)}Kcal`}
                         </span>
 
-                        {!isPendingDelete ? (
-                          <span
-                            role='button'
-                            tabIndex={0}
-                            onClick={(event) =>
-                              handleDeleteClick(event, plan.id)
+                        <span
+                          role='button'
+                          tabIndex={0}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            openEditForm(plan);
+                          }}
+                          onKeyDown={(event) => {
+                            if (event.key === "Enter" || event.key === " ") {
+                              event.stopPropagation();
+                              openEditForm(plan);
                             }
-                            onKeyDown={(event) => {
-                              if (event.key === "Enter" || event.key === " ") {
-                                handleDeleteClick(event, plan.id);
-                              }
-                            }}
-                            className='p-1.5 border-2 border-black bg-white text-black hover:bg-[#FF2A5F] hover:text-white'
-                            aria-label={`Delete ${plan.name}`}
-                          >
-                            <Trash2 className='w-5 h-5' />
-                          </span>
-                        ) : (
-                          <div className='hidden sm:flex items-center gap-3'>
-                            <button
-                              type='button'
-                              onClick={handleDeleteCancel}
-                              className='px-4 py-2.5 border-4 border-black bg-white text-black hover:bg-[#F2F2F2] text-xs font-black uppercase tracking-wide'
-                            >
-                              Cancel
-                            </button>
-                            <button
-                              type='button'
-                              onClick={(event) =>
-                                void handleDeleteConfirm(event, plan.id)
-                              }
-                              className='px-4 py-2.5 border-4 border-black bg-[#FF2A5F] text-white hover:bg-[#E6003D] text-xs font-black uppercase tracking-wide'
-                            >
-                              Delete
-                            </button>
-                          </div>
-                        )}
+                          }}
+                          className='p-1.5 border-2 border-black bg-white text-black'
+                          aria-label={`Edit ${plan.name}`}
+                        >
+                          <Pencil className='w-5 h-5' />
+                        </span>
                       </div>
                     </div>
-
-                    {isPendingDelete && (
-                      <div className='mt-3 flex sm:hidden items-center justify-center gap-3'>
-                        <button
-                          type='button'
-                          onClick={handleDeleteCancel}
-                          className='px-4 py-2.5 border-4 border-black bg-white text-black hover:bg-[#F2F2F2] text-xs font-black uppercase tracking-wide'
-                        >
-                          Cancel
-                        </button>
-                        <button
-                          type='button'
-                          onClick={(event) =>
-                            void handleDeleteConfirm(event, plan.id)
-                          }
-                          className='px-4 py-2.5 border-4 border-black bg-[#FF2A5F] text-white hover:bg-[#E6003D] text-xs font-black uppercase tracking-wide'
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    )}
                   </button>
                 );
               })}
+
+              <div className='flex justify-center gap-2.5 pt-1 pb-1'>
+                <button
+                  type='button'
+                  onClick={() => openCreateForm("new")}
+                  disabled={isPlansLoading}
+                  className={listButtonClass}
+                >
+                  New plan
+                </button>
+                <button
+                  type='button'
+                  onClick={() => openCreateForm("duplicate")}
+                  disabled={isPlansLoading || !activePlan}
+                  className={listButtonClass}
+                >
+                  Duplicate plan
+                </button>
+              </div>
             </div>
+          </div>
+        )}
+
+        {isFormOpen && (
+          <div className='px-4 py-4 sm:px-6 sm:py-5 bg-white'>
+            <form className='space-y-3' onSubmit={handleSubmit}>
+              <h3 className='text-sm md:text-base font-black uppercase tracking-wide text-black'>
+                {formTitle}
+              </h3>
+
+              <div>
+                <label className={labelClass} htmlFor='meal-plan-name'>
+                  Name
+                </label>
+                <input
+                  id='meal-plan-name'
+                  value={draft.name}
+                  onChange={(event) =>
+                    setDraft((prev) => ({ ...prev, name: event.target.value }))
+                  }
+                  placeholder='Cutting week'
+                  maxLength={PLAN_NAME_MAX_LENGTH}
+                  className={inputClass}
+                />
+                {showErrors && nameError && (
+                  <p className='mt-1 text-xs font-black uppercase tracking-wide text-[#FF2A5F]'>
+                    {nameError}
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <label className={labelClass} htmlFor='meal-plan-description'>
+                  Description
+                </label>
+                <input
+                  id='meal-plan-description'
+                  value={draft.description}
+                  onChange={(event) =>
+                    setDraft((prev) => ({
+                      ...prev,
+                      description: event.target.value,
+                    }))
+                  }
+                  placeholder='High protein, low carb'
+                  maxLength={PLAN_DESCRIPTION_MAX_LENGTH}
+                  className={inputClass}
+                />
+              </div>
+
+              {isConfirmingDelete && (
+                <p className='text-xs md:text-sm font-bold text-black'>
+                  Deleting removes this plan with its meals and food groups.
+                </p>
+              )}
+
+              {formMode === "current" ? (
+                <button
+                  type='submit'
+                  disabled={isPlansLoading}
+                  className={`${formButtonClass} w-full bg-black text-white transition-transform hover:translate-x-px hover:translate-y-px disabled:opacity-60 disabled:cursor-not-allowed`}
+                >
+                  Save
+                </button>
+              ) : (
+                <div className='flex gap-2.5'>
+                  <button
+                    type='button'
+                    onClick={
+                      isConfirmingDelete
+                        ? () => setIsConfirmingDelete(false)
+                        : closeForm
+                    }
+                    className={`${formButtonClass} bg-white text-black hover:bg-[#F2F2F2]`}
+                  >
+                    Cancel
+                  </button>
+
+                  {formMode === "edit" && (
+                    <button
+                      type='button'
+                      onClick={
+                        isConfirmingDelete
+                          ? () => void confirmDelete()
+                          : () => setIsConfirmingDelete(true)
+                      }
+                      className={`${formButtonClass} text-black hover:bg-[#FF2A5F] hover:text-white ${
+                        isConfirmingDelete
+                          ? "bg-[#FF2A5F] text-white"
+                          : "bg-white"
+                      }`}
+                    >
+                      Delete
+                    </button>
+                  )}
+
+                  {!isConfirmingDelete && (
+                    <button
+                      type='submit'
+                      disabled={isPlansLoading}
+                      className={`${formButtonClass} bg-black text-white transition-transform hover:translate-x-px hover:translate-y-px disabled:opacity-60 disabled:cursor-not-allowed`}
+                    >
+                      {formMode === "edit" ? "Save" : "Create"}
+                    </button>
+                  )}
+                </div>
+              )}
+            </form>
           </div>
         )}
       </div>

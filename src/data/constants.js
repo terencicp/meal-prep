@@ -126,6 +126,9 @@ export const LOCAL_STORAGE_AUTH_ACTIVE_KEY = "mealPlannerAuthActive";
 export const LOCAL_STORAGE_PREP_STATE_KEY = "mealPlannerPrepState";
 export const LOCAL_STORAGE_FOOD_GROUPS_KEY = "mealPlannerFoodGroups";
 
+export const PLAN_NAME_MAX_LENGTH = 70;
+export const PLAN_DESCRIPTION_MAX_LENGTH = 140;
+
 export const DEFAULT_PREP_DAYS = 4;
 export const DEFAULT_CALORIE_GOAL = 2000;
 
