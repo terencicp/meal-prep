@@ -6,23 +6,15 @@ import {
   Circle,
   ArrowRight,
 } from "lucide-react";
-
-const EGG_WEIGHT_GRAMS = 50;
-const YOGURT_WEIGHT_GRAMS = 120;
+import { UNIT_WEIGHTS_BY_ID } from "../data/foodGroups";
 
 function formatShoppingAmount(item) {
   const totalGrams = item.finalAmountKg * 1000;
+  const unitWeight = UNIT_WEIGHTS_BY_ID[item.id];
 
-  if (item.id === "eggs") {
+  if (unitWeight) {
     return {
-      value: Math.ceil(totalGrams / EGG_WEIGHT_GRAMS),
-      unit: "",
-    };
-  }
-
-  if (item.id === "yogurt") {
-    return {
-      value: Math.ceil(totalGrams / YOGURT_WEIGHT_GRAMS),
+      value: Math.ceil(totalGrams / unitWeight),
       unit: "",
     };
   }
@@ -171,9 +163,11 @@ export default function ShoppingTab({
         </div>
       </div>
 
-      <p className='text-xs text-slate-500 text-center px-2 font-bold'>
-        A yogurt is 120 grams, an egg is 50 grams.
-      </p>
+      {shoppingList.some((item) => UNIT_WEIGHTS_BY_ID[item.id]) && (
+        <p className='text-xs text-slate-500 text-center px-2 font-bold'>
+          A yogurt is 120 grams, an egg is 50 grams.
+        </p>
+      )}
 
       <div className='mt-10 flex justify-center'>
         <button

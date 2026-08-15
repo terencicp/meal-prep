@@ -6,13 +6,15 @@ import {
   RefreshCw,
   ArrowRight,
 } from "lucide-react";
-import { FOOD_GROUPS, MEAL_NAMES } from "../data/constants";
+import { MEAL_NAMES } from "../data/constants";
+import { buildFoodGroupMap } from "../data/foodGroups";
 
 export default function PrepareMealTab({
   meals,
   mealToPrepare,
   setMealToPrepare,
   checkedItems,
+  foodGroups,
   substitutions,
   isSubstitutionMode,
   selectedSubstitutionAnchors,
@@ -22,21 +24,26 @@ export default function PrepareMealTab({
   setActiveTab,
   trackerLast30DaysPercent,
 }) {
-  const foodGroupById = FOOD_GROUPS.reduce((acc, food) => {
-    acc[food.id] = food;
-    return acc;
-  }, {});
+  const foodGroupById = buildFoodGroupMap(foodGroups);
 
   const subByAnchor = new Map();
   const sourceIdsInSubs = new Set();
   substitutions.forEach((sub) => {
+    // A substitution whose replacement or sources no longer exist is ignored,
+    // so the row falls back to the original food instead of disappearing.
+    if (!foodGroupById[sub.replacementFoodId]) {
+      return;
+    }
+    if (!sub.sourceIds.every((id) => foodGroupById[id])) {
+      return;
+    }
     subByAnchor.set(sub.anchorFoodId, sub);
     sub.sourceIds.forEach((id) => sourceIdsInSubs.add(id));
   });
 
   const mealFoods = meals[mealToPrepare] || {};
   const displayRows = [];
-  FOOD_GROUPS.forEach((food) => {
+  foodGroups.forEach((food) => {
     const amount = mealFoods[food.id] || 0;
     if (amount <= 0) {
       return;

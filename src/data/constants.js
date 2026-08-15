@@ -124,6 +124,7 @@ export const LOCAL_STORAGE_MEALS_KEY = "mealPlannerMeals";
 export const LOCAL_STORAGE_SETTINGS_KEY = "mealPlannerSettings";
 export const LOCAL_STORAGE_AUTH_ACTIVE_KEY = "mealPlannerAuthActive";
 export const LOCAL_STORAGE_PREP_STATE_KEY = "mealPlannerPrepState";
+export const LOCAL_STORAGE_FOOD_GROUPS_KEY = "mealPlannerFoodGroups";
 
 export const DEFAULT_PREP_DAYS = 4;
 export const DEFAULT_CALORIE_GOAL = 2000;

@@ -14,7 +14,7 @@ It helps you:
 
 ## Meal planning
 
-The app uses predefined food groups. You choose grams for each food group in each meal, and the app calculates calories and macros per meal and daily totals. The planner and settings are saved locally by default, and can sync with Google after logging in.
+The app ships with predefined food groups, and you can add your own. You choose grams for each food group in each meal, and the app calculates calories and macros per meal and daily totals. The planner and settings are saved locally by default, and can sync with Google after logging in.
 
 ## Food groups
 
@@ -27,6 +27,14 @@ The app uses predefined food groups. You choose grams for each food group in eac
 7. Meat (or fish)
 8. Yogurt
 9. Eggs
+
+The `Food groups` button at the bottom of the `Plan meals` tab opens a modal where you can:
+
+- **Add custom food groups** with a name, description, and calories, carbs, fats and protein per 100 g, plus an optional prep-loss multiplier (how much extra to buy to cover peel and trim — 1 means no loss). Custom groups can be edited or deleted later.
+- **Hide any group** you are not using right now, predefined or custom, and show it again at any time.
+- **Reorder every group** with the up and down arrows. The order applies to the planner, the prep checklist, and the shopping list.
+
+Hiding or deleting a group that still has grams in a meal asks for confirmation first and then clears those grams, so totals always match what you see. The catalog is shared across all your meal plans and is stored locally, syncing to your account when you are signed in.
 
 ## How it works
 

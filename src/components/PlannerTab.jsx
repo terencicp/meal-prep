@@ -1,5 +1,8 @@
-import React from "react";
-import { FOOD_GROUPS, MEAL_NAMES } from "../data/constants";
+import React, { useState } from "react";
+import { MEAL_NAMES } from "../data/constants";
+
+const bottomButtonClass =
+  "flex-1 basis-0 min-w-0 px-1 sm:px-3 py-2 border-4 border-black text-black text-[11px] sm:text-sm font-black uppercase tracking-wide whitespace-nowrap shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] active:translate-x-0.75 active:translate-y-0.75 active:shadow-none transition-all";
 
 const MacroBadge = ({ label, value, colorClass, textClass = "text-black" }) => (
   <div
@@ -31,9 +34,16 @@ export default function PlannerTab({
   carbsPct,
   fatsPct,
   proteinPct,
-  activeMealPlanName,
-  authControls,
+  foodGroups,
+  plannerTitle,
+  user,
+  onOpenFoodGroups,
+  onOpenMealPlans,
+  onSignIn,
+  onSignOut,
 }) {
+  const [brokenProfileImageUrl, setBrokenProfileImageUrl] = useState(null);
+
   const handleSelectInputContent = (event) => {
     // Delay selection slightly so mobile browsers finish placing focus first.
     requestAnimationFrame(() => {
@@ -45,8 +55,8 @@ export default function PlannerTab({
     <div className='space-y-8 w-full'>
       <div className='bg-white w-full border-4 border-black px-4 pb-4 pt-3 md:px-7 md:pb-7 md:pt-5 shadow-[7px_7px_0px_0px_rgba(0,0,0,1)]'>
         <div className='mb-3 md:mb-5'>
-          <h2 className='text-2xl md:text-2xl font-black uppercase tracking-wide'>
-            Daily totals
+          <h2 className='text-2xl md:text-2xl font-black uppercase tracking-wide truncate'>
+            {plannerTitle}
           </h2>
         </div>
 
@@ -210,7 +220,7 @@ export default function PlannerTab({
               </div>
 
               <div className='px-4 py-3 space-y-2'>
-                {FOOD_GROUPS.map((food) => {
+                {foodGroups.map((food) => {
                   const grams = meals[meal]?.[food.id] || "";
                   const isActive = grams > 0;
 
@@ -250,13 +260,59 @@ export default function PlannerTab({
         })}
       </div>
 
-      <div className='w-full flex flex-col items-center gap-3 pt-1'>
-        {activeMealPlanName && (
-          <p className='text-base md:text-lg font-black uppercase tracking-wide text-black'>
-            Meal plan: {activeMealPlanName}
-          </p>
+      <div className='w-full flex flex-col items-center gap-4 pt-1'>
+        <div className='w-full max-w-md sm:max-w-lg flex items-center justify-center gap-1.5 sm:gap-3'>
+          <button
+            onClick={onOpenFoodGroups}
+            className={`${bottomButtonClass} bg-white`}
+          >
+            Food groups
+          </button>
+
+          {user ? (
+            <>
+              <button
+                onClick={onOpenMealPlans}
+                className={`${bottomButtonClass} bg-white`}
+              >
+                Meal plans
+              </button>
+              <button
+                onClick={onSignOut}
+                className={`${bottomButtonClass} bg-white`}
+              >
+                Sign out
+              </button>
+            </>
+          ) : (
+            <button
+              onClick={onSignIn}
+              className={`${bottomButtonClass} bg-[#FFD600]`}
+            >
+              Sync with Google
+            </button>
+          )}
+        </div>
+
+        {user && (
+          <div className='flex items-center gap-3 max-w-full'>
+            {user.photoURL && user.photoURL !== brokenProfileImageUrl ? (
+              <img
+                src={user.photoURL}
+                alt='Profile'
+                onError={() => setBrokenProfileImageUrl(user.photoURL)}
+                className='w-11 h-11 rounded-full object-cover border-4 border-black shrink-0'
+              />
+            ) : (
+              <div className='w-11 h-11 rounded-full bg-slate-200 text-slate-700 text-sm font-black flex items-center justify-center border-4 border-black shrink-0'>
+                {(user.displayName?.[0] || user.email?.[0] || "U").toUpperCase()}
+              </div>
+            )}
+            <span className='text-sm md:text-base font-bold text-black/70 break-all'>
+              {user.email}
+            </span>
+          </div>
         )}
-        <div className='w-full flex justify-center'>{authControls}</div>
       </div>
     </div>
   );

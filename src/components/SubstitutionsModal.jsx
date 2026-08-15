@@ -1,22 +1,21 @@
 import React, { useMemo } from "react";
 import { X } from "lucide-react";
-import { FOOD_GROUPS } from "../data/constants";
+import { buildFoodGroupMap } from "../data/foodGroups";
 
 export default function SubstitutionsModal({
   isOpen,
   mealName,
+  foodGroups,
   sources,
   restoreInfo,
   onClose,
   onApplySubstitution,
   onRestoreSubstitution,
 }) {
-  const foodGroupById = useMemo(() => {
-    return FOOD_GROUPS.reduce((acc, food) => {
-      acc[food.id] = food;
-      return acc;
-    }, {});
-  }, []);
+  const foodGroupById = useMemo(
+    () => buildFoodGroupMap(foodGroups),
+    [foodGroups],
+  );
 
   const resolvedSources = useMemo(() => {
     if (!Array.isArray(sources)) {
@@ -57,15 +56,15 @@ export default function SubstitutionsModal({
     }
     const candidates =
       resolvedSources.length === 1
-        ? FOOD_GROUPS.filter((food) => !sourceIdSet.has(food.id))
-        : FOOD_GROUPS;
+        ? foodGroups.filter((food) => !sourceIdSet.has(food.id))
+        : foodGroups;
     return candidates.map((food) => ({
       id: food.id,
       name: food.name,
       grams:
         food.kCal > 0 ? Math.round((targetCalories * 100) / food.kCal) : 0,
     }));
-  }, [resolvedSources, sourceIdSet, targetCalories]);
+  }, [resolvedSources, sourceIdSet, targetCalories, foodGroups]);
 
   if (!isOpen || resolvedSources.length === 0) {
     return null;

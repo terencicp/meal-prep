@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   addDoc,
   collection,
@@ -18,10 +18,22 @@ import {
   DEFAULT_PREP_DAYS,
   INITIAL_MEALS,
   LOCAL_STORAGE_AUTH_ACTIVE_KEY,
+  LOCAL_STORAGE_FOOD_GROUPS_KEY,
   LOCAL_STORAGE_MEALS_KEY,
   LOCAL_STORAGE_SETTINGS_KEY,
-  FOOD_GROUPS,
 } from "../data/constants";
+import {
+  EMPTY_FOOD_GROUP_CATALOG,
+  MAX_CUSTOM_FOOD_GROUPS,
+  countFoodGroupUsage,
+  createCustomFoodGroupId,
+  hasFoodGroupCatalogContent,
+  moveIdInOrder,
+  normalizeFoodGroupCatalog,
+  removeFoodGroupFromMeals,
+  resolveAllFoodGroups,
+  resolveVisibleFoodGroups,
+} from "../data/foodGroups";
 
 function normalizePositiveNumber(value, fallback) {
   return typeof value === "number" && Number.isFinite(value) && value > 0
@@ -58,17 +70,25 @@ function toDateOrNull(value) {
   return null;
 }
 
-function calculatePlanCalories(meals) {
+function calculatePlanCalories(meals, foodGroups) {
   return Math.round(
     Object.values(meals).reduce((mealAcc, mealFoods) => {
       return (
         mealAcc +
-        FOOD_GROUPS.reduce((foodAcc, food) => {
+        foodGroups.reduce((foodAcc, food) => {
           const grams = mealFoods?.[food.id] || 0;
           return foodAcc + food.kCal * (grams / 100);
         }, 0)
       );
     }, 0),
+  );
+}
+
+function mealsIncludeFoodGroup(meals, foodGroupId) {
+  return Object.values(meals || {}).some(
+    (mealFoods) =>
+      mealFoods &&
+      Object.prototype.hasOwnProperty.call(mealFoods, foodGroupId),
   );
 }
 
@@ -125,6 +145,20 @@ function loadSettingsFromLocalStorage() {
   }
 }
 
+function loadFoodGroupCatalogFromLocalStorage() {
+  try {
+    const stored = localStorage.getItem(LOCAL_STORAGE_FOOD_GROUPS_KEY);
+    if (!stored) {
+      return EMPTY_FOOD_GROUP_CATALOG;
+    }
+
+    return normalizeFoodGroupCatalog(JSON.parse(stored));
+  } catch (error) {
+    console.error("Failed to load food groups from localStorage:", error);
+    return EMPTY_FOOD_GROUP_CATALOG;
+  }
+}
+
 function shouldRestorePreviousAuthSession() {
   try {
     return localStorage.getItem(LOCAL_STORAGE_AUTH_ACTIVE_KEY) === "true";
@@ -157,6 +191,9 @@ export function useSyncMeals() {
   const [user, setUser] = useState(null);
   const [meals, setMeals] = useState(loadMealsFromLocalStorage);
   const [settings, setSettings] = useState(loadSettingsFromLocalStorage);
+  const [foodGroupCatalog, setFoodGroupCatalog] = useState(
+    loadFoodGroupCatalogFromLocalStorage,
+  );
   const [mealPlans, setMealPlans] = useState([]);
   const [activePlanId, setActivePlanId] = useState(null);
   const [isPlansLoading, setIsPlansLoading] = useState(false);
@@ -164,6 +201,17 @@ export function useSyncMeals() {
     useState(false);
   const authRuntimeRef = useRef(null);
   const authUnsubscribeRef = useRef(null);
+  // Mirrors the catalog so the login handshake can read it without re-running.
+  const foodGroupCatalogRef = useRef(foodGroupCatalog);
+
+  const foodGroups = useMemo(
+    () => resolveVisibleFoodGroups(foodGroupCatalog),
+    [foodGroupCatalog],
+  );
+  const allFoodGroups = useMemo(
+    () => resolveAllFoodGroups(foodGroupCatalog),
+    [foodGroupCatalog],
+  );
 
   const persistMealsToLocalStorage = (nextMeals) => {
     try {
@@ -182,6 +230,36 @@ export function useSyncMeals() {
     } catch (error) {
       console.error("Failed to save planner settings to localStorage:", error);
     }
+  };
+
+  const persistFoodGroupCatalogToLocalStorage = (nextCatalog) => {
+    try {
+      localStorage.setItem(
+        LOCAL_STORAGE_FOOD_GROUPS_KEY,
+        JSON.stringify({ v: 1, ...nextCatalog }),
+      );
+    } catch (error) {
+      console.error("Failed to save food groups to localStorage:", error);
+    }
+  };
+
+  const syncFoodGroupCatalogToFirestore = (nextCatalog, uid) => {
+    if (!db || !uid) {
+      return;
+    }
+
+    void setDoc(
+      doc(db, "users", uid),
+      {
+        customFoodGroups: nextCatalog.custom,
+        hiddenFoodGroupIds: nextCatalog.hidden,
+        foodGroupOrder: nextCatalog.order,
+        updatedAt: serverTimestamp(),
+      },
+      { merge: true },
+    ).catch((error) => {
+      console.error("Failed to sync food groups to Firestore:", error);
+    });
   };
 
   const ensureAuthReady = async () => {
@@ -249,6 +327,32 @@ export function useSyncMeals() {
         ]);
 
         const userData = userSnapshot.exists() ? userSnapshot.data() : null;
+
+        // The remote catalog wins when it exists; otherwise a catalog built
+        // while signed out is pushed up on this first sign-in.
+        const localCatalog = foodGroupCatalogRef.current;
+        const hasRemoteCatalog = Boolean(
+          userData &&
+            (Array.isArray(userData.customFoodGroups) ||
+              Array.isArray(userData.hiddenFoodGroupIds) ||
+              Array.isArray(userData.foodGroupOrder)),
+        );
+        let effectiveCatalog = localCatalog;
+
+        if (hasRemoteCatalog) {
+          effectiveCatalog = normalizeFoodGroupCatalog({
+            custom: userData.customFoodGroups,
+            hidden: userData.hiddenFoodGroupIds,
+            order: userData.foodGroupOrder,
+          });
+          foodGroupCatalogRef.current = effectiveCatalog;
+          setFoodGroupCatalog(effectiveCatalog);
+          persistFoodGroupCatalogToLocalStorage(effectiveCatalog);
+        } else if (hasFoodGroupCatalogContent(localCatalog)) {
+          syncFoodGroupCatalogToFirestore(localCatalog, user.uid);
+        }
+
+        const effectiveFoodGroups = resolveVisibleFoodGroups(effectiveCatalog);
         const plans = plansSnapshot.docs
           .map((planDoc) => {
             const data = planDoc.data();
@@ -266,7 +370,10 @@ export function useSyncMeals() {
               ),
               totalKcal: normalizePositiveNumber(
                 data?.totalKcal,
-                calculatePlanCalories(normalizeMealPlan(data?.meals)),
+                calculatePlanCalories(
+                  normalizeMealPlan(data?.meals),
+                  effectiveFoodGroups,
+                ),
               ),
               createdAt: toDateOrNull(data?.createdAt),
               updatedAt: toDateOrNull(data?.updatedAt),
@@ -340,7 +447,7 @@ export function useSyncMeals() {
           "mealPlans",
           activePlanId,
         );
-        const nextTotalKcal = calculatePlanCalories(nextMeals);
+        const nextTotalKcal = calculatePlanCalories(nextMeals, foodGroups);
 
         void updateDoc(planDocRef, {
           meals: nextMeals,
@@ -422,6 +529,168 @@ export function useSyncMeals() {
     updateSettingField("prepDays", value, normalizePositiveInteger);
   };
 
+  const applyFoodGroupCatalog = (nextRawCatalog) => {
+    const nextCatalog = normalizeFoodGroupCatalog(nextRawCatalog);
+
+    foodGroupCatalogRef.current = nextCatalog;
+    setFoodGroupCatalog(nextCatalog);
+    persistFoodGroupCatalogToLocalStorage(nextCatalog);
+    syncFoodGroupCatalogToFirestore(nextCatalog, user?.uid);
+
+    return nextCatalog;
+  };
+
+  // Keeps the denormalized plan calories in step when the catalog itself
+  // changes. Reordering leaves the number untouched, so it writes nothing.
+  const reconcileActivePlanTotals = (nextFoodGroups) => {
+    if (!db || !user?.uid || !activePlanId) {
+      return;
+    }
+
+    const nextTotalKcal = calculatePlanCalories(meals, nextFoodGroups);
+    const activePlan = mealPlans.find((plan) => plan.id === activePlanId);
+    if (activePlan && Math.round(activePlan.totalKcal || 0) === nextTotalKcal) {
+      return;
+    }
+
+    void updateDoc(doc(db, "users", user.uid, "mealPlans", activePlanId), {
+      totalKcal: nextTotalKcal,
+      updatedAt: serverTimestamp(),
+    }).catch((error) => {
+      console.error("Failed to sync plan calories to Firestore:", error);
+    });
+
+    setMealPlans((prevPlans) =>
+      prevPlans
+        .map((plan) =>
+          plan.id === activePlanId
+            ? { ...plan, totalKcal: nextTotalKcal, updatedAt: new Date() }
+            : plan,
+        )
+        .sort(comparePlansByRecent),
+    );
+  };
+
+  // Hiding or deleting a group clears its grams from every plan we know about,
+  // so totals and checklists never count food that is no longer visible.
+  const purgeFoodGroupFromMeals = (foodGroupId) => {
+    if (mealsIncludeFoodGroup(meals, foodGroupId)) {
+      updateMeals((prev) => removeFoodGroupFromMeals(prev, foodGroupId));
+    }
+
+    if (!db || !user?.uid) {
+      return;
+    }
+
+    const strippedPlansById = new Map();
+    mealPlans.forEach((plan) => {
+      if (plan.id === activePlanId || !mealsIncludeFoodGroup(plan.meals, foodGroupId)) {
+        return;
+      }
+
+      const nextMeals = removeFoodGroupFromMeals(plan.meals, foodGroupId);
+      const nextTotalKcal = calculatePlanCalories(nextMeals, foodGroups);
+      strippedPlansById.set(plan.id, {
+        meals: nextMeals,
+        totalKcal: nextTotalKcal,
+      });
+
+      void updateDoc(doc(db, "users", user.uid, "mealPlans", plan.id), {
+        meals: nextMeals,
+        totalKcal: nextTotalKcal,
+        updatedAt: serverTimestamp(),
+      }).catch((error) => {
+        console.error("Failed to remove food group from meal plan:", error);
+      });
+    });
+
+    if (strippedPlansById.size === 0) {
+      return;
+    }
+
+    setMealPlans((prevPlans) =>
+      prevPlans
+        .map((plan) => {
+          const stripped = strippedPlansById.get(plan.id);
+          return stripped
+            ? { ...plan, ...stripped, updatedAt: new Date() }
+            : plan;
+        })
+        .sort(comparePlansByRecent),
+    );
+  };
+
+  const addFoodGroup = (draft) => {
+    const catalog = foodGroupCatalogRef.current;
+    if (catalog.custom.length >= MAX_CUSTOM_FOOD_GROUPS) {
+      return;
+    }
+
+    const takenIds = new Set(allFoodGroups.map((food) => food.id));
+    const id = createCustomFoodGroupId(draft.name, takenIds);
+
+    applyFoodGroupCatalog({
+      ...catalog,
+      custom: [...catalog.custom, { ...draft, id }],
+      order: [...allFoodGroups.map((food) => food.id), id],
+    });
+  };
+
+  const updateFoodGroup = (id, draft) => {
+    const catalog = foodGroupCatalogRef.current;
+    const nextCatalog = applyFoodGroupCatalog({
+      ...catalog,
+      custom: catalog.custom.map((food) =>
+        food.id === id ? { ...food, ...draft, id } : food,
+      ),
+    });
+
+    reconcileActivePlanTotals(resolveVisibleFoodGroups(nextCatalog));
+  };
+
+  const deleteFoodGroup = (id) => {
+    const catalog = foodGroupCatalogRef.current;
+    purgeFoodGroupFromMeals(id);
+
+    applyFoodGroupCatalog({
+      custom: catalog.custom.filter((food) => food.id !== id),
+      hidden: catalog.hidden.filter((hiddenId) => hiddenId !== id),
+      order: catalog.order.filter((orderedId) => orderedId !== id),
+    });
+  };
+
+  const setFoodGroupHidden = (id, isHidden) => {
+    const catalog = foodGroupCatalogRef.current;
+    if (isHidden) {
+      purgeFoodGroupFromMeals(id);
+    }
+
+    applyFoodGroupCatalog({
+      ...catalog,
+      hidden: isHidden
+        ? [...catalog.hidden, id]
+        : catalog.hidden.filter((hiddenId) => hiddenId !== id),
+    });
+  };
+
+  const moveFoodGroup = (id, direction) => {
+    applyFoodGroupCatalog({
+      ...foodGroupCatalogRef.current,
+      order: moveIdInOrder(
+        allFoodGroups.map((food) => food.id),
+        id,
+        direction,
+      ),
+    });
+  };
+
+  const getFoodGroupUsage = (id) => ({
+    mealCount: countFoodGroupUsage(meals, id),
+    planCount: mealPlans.filter(
+      (plan) => countFoodGroupUsage(plan.meals, id) > 0,
+    ).length,
+  });
+
   const createMealPlan = async (name) => {
     if (!db || !user?.uid) {
       return null;
@@ -429,7 +698,7 @@ export function useSyncMeals() {
 
     const normalizedName = normalizePlanName(name);
     const now = new Date();
-    const totalKcal = calculatePlanCalories(meals);
+    const totalKcal = calculatePlanCalories(meals, foodGroups);
     const payload = {
       name: normalizedName,
       meals,
@@ -605,6 +874,14 @@ export function useSyncMeals() {
     prepDays: settings.prepDays,
     setCalorieGoal,
     setPrepDays,
+    foodGroups,
+    allFoodGroups,
+    addFoodGroup,
+    updateFoodGroup,
+    deleteFoodGroup,
+    setFoodGroupHidden,
+    moveFoodGroup,
+    getFoodGroupUsage,
     mealPlans,
     activePlanId,
     isPlansLoading,

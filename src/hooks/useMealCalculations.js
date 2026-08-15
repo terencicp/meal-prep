@@ -1,12 +1,17 @@
 import { useMemo } from "react";
-import { FOOD_GROUPS, MEAL_NAMES } from "../data/constants";
+import { MEAL_NAMES } from "../data/constants";
 
-export function useMealCalculations({ meals, calorieGoal, prepDays }) {
+export function useMealCalculations({
+  meals,
+  calorieGoal,
+  prepDays,
+  foodGroups,
+}) {
   const mealTotals = useMemo(() => {
     const totals = {};
     MEAL_NAMES.forEach((meal) => {
       totals[meal] = { kCal: 0, carbs: 0, fats: 0, protein: 0 };
-      FOOD_GROUPS.forEach((food) => {
+      foodGroups.forEach((food) => {
         const grams = meals[meal]?.[food.id] || 0;
         const factor = grams / 100;
         totals[meal].kCal += food.kCal * factor;
@@ -16,7 +21,7 @@ export function useMealCalculations({ meals, calorieGoal, prepDays }) {
       });
     });
     return totals;
-  }, [meals]);
+  }, [meals, foodGroups]);
 
   const dailyTotals = useMemo(() => {
     const totals = { kCal: 0, carbs: 0, fats: 0, protein: 0, weight: 0 };
@@ -28,16 +33,16 @@ export function useMealCalculations({ meals, calorieGoal, prepDays }) {
     });
 
     Object.values(meals).forEach((mealObj) => {
-      Object.values(mealObj).forEach((grams) => {
-        totals.weight += grams || 0;
+      foodGroups.forEach((food) => {
+        totals.weight += mealObj?.[food.id] || 0;
       });
     });
 
     return totals;
-  }, [mealTotals, meals]);
+  }, [mealTotals, meals, foodGroups]);
 
   const shoppingList = useMemo(() => {
-    return FOOD_GROUPS.map((food) => {
+    return foodGroups.map((food) => {
       const dailyGrams = Object.values(meals).reduce(
         (acc, meal) => acc + (meal[food.id] || 0),
         0,
@@ -52,7 +57,7 @@ export function useMealCalculations({ meals, calorieGoal, prepDays }) {
         hasWasteMultiplier: food.waste > 1.0,
       };
     }).filter((item) => item.finalAmountKg > 0);
-  }, [meals, prepDays]);
+  }, [meals, prepDays, foodGroups]);
 
   const macroKcalTotal =
     dailyTotals.carbs * 4 + dailyTotals.fats * 9 + dailyTotals.protein * 4;

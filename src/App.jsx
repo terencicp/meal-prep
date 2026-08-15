@@ -11,7 +11,6 @@ import { useSyncTracker } from "./hooks/useSyncTracker";
 import { useMealCalculations } from "./hooks/useMealCalculations";
 import { usePriceTracker } from "./hooks/usePriceTracker";
 import {
-  FOOD_GROUPS,
   LOCAL_STORAGE_PREP_STATE_KEY,
   LOCAL_STORAGE_MEALS_KEY,
   LOCAL_STORAGE_SETTINGS_KEY,
@@ -22,6 +21,7 @@ import PlannerTab from "./components/PlannerTab";
 import ShoppingTab from "./components/ShoppingTab";
 import ShoppingPriceTracker from "./components/ShoppingPriceTracker";
 import MealPlansModal from "./components/MealPlansModal";
+import FoodGroupsModal from "./components/FoodGroupsModal";
 import SubstitutionsModal from "./components/SubstitutionsModal";
 import TrackerCalendarTab from "./components/TrackerCalendarTab";
 
@@ -166,7 +166,7 @@ function persistPrepStateToLocalStorage({
   }
 }
 
-function calculateTrackerSummary(meals, checkedItemsByMeal) {
+function calculateTrackerSummary(meals, checkedItemsByMeal, visibleFoodIds) {
   let totalItems = 0;
   let totalChecked = 0;
   const byMeal = {};
@@ -175,7 +175,9 @@ function calculateTrackerSummary(meals, checkedItemsByMeal) {
     let mealTotal = 0;
     let mealChecked = 0;
 
-    Object.keys(foodItems).forEach((foodId) => {
+    // Only visible food groups count, so grams left behind by a removed group
+    // can never hold adherence below 100%.
+    visibleFoodIds.forEach((foodId) => {
       const amount = foodItems[foodId];
       if (amount > 0) {
         mealTotal += 1;
@@ -206,12 +208,12 @@ function calculateTrackerSummary(meals, checkedItemsByMeal) {
   };
 }
 
-function calculateFullCompletionSummary(meals) {
+function calculateFullCompletionSummary(meals, visibleFoodIds) {
   const allCheckedByMeal = {};
 
   Object.entries(meals).forEach(([mealName, foodItems]) => {
     const checked = {};
-    Object.keys(foodItems).forEach((foodId) => {
+    visibleFoodIds.forEach((foodId) => {
       if (foodItems[foodId] > 0) {
         checked[foodId] = foodItems[foodId];
       }
@@ -219,7 +221,7 @@ function calculateFullCompletionSummary(meals) {
     allCheckedByMeal[mealName] = checked;
   });
 
-  return calculateTrackerSummary(meals, allCheckedByMeal);
+  return calculateTrackerSummary(meals, allCheckedByMeal, visibleFoodIds);
 }
 
 export default function App() {
@@ -260,6 +262,14 @@ export default function App() {
     setCalorieGoal,
     prepDays,
     setPrepDays,
+    foodGroups,
+    allFoodGroups,
+    addFoodGroup,
+    updateFoodGroup,
+    deleteFoodGroup,
+    setFoodGroupHidden,
+    moveFoodGroup,
+    getFoodGroupUsage,
     mealPlans,
     activePlanId,
     isPlansLoading,
@@ -295,15 +305,20 @@ export default function App() {
   });
   const [checkedShoppingItems, setCheckedShoppingItems] = useState({});
   const [isMealPlansModalVisible, setIsMealPlansModalVisible] = useState(false);
+  const [isFoodGroupsModalOpen, setIsFoodGroupsModalOpen] = useState(false);
   const [planNameInput, setPlanNameInput] = useState("");
-  const [brokenProfileImageUrl, setBrokenProfileImageUrl] = useState(null);
 
   const isMealPlansModalOpen = Boolean(user) && isMealPlansModalVisible;
   const hasActiveSavedPlan = Boolean(user && activePlanId);
-  const activeMealPlanName =
-    user && activePlanId
+  const visibleFoodIds = useMemo(
+    () => foodGroups.map((food) => food.id),
+    [foodGroups],
+  );
+  const plannerTitle = !user
+    ? "Daily totals"
+    : activePlanId
       ? mealPlans.find((plan) => plan.id === activePlanId)?.name || "Meal plan"
-      : null;
+      : "Unsaved plan";
   const checkedItems = checkedItemsByMeal[mealToPrepare] || {};
   const substitutionsForMeal = prepSubstitutionsByMeal[mealToPrepare] || [];
   const isSubstitutionModalOpen = Boolean(substitutionModalContext.isOpen);
@@ -366,8 +381,8 @@ export default function App() {
   }, [closeSubstitutionModal]);
 
   const currentPrepSummary = useMemo(() => {
-    return calculateTrackerSummary(meals, checkedItemsByMeal);
-  }, [meals, checkedItemsByMeal]);
+    return calculateTrackerSummary(meals, checkedItemsByMeal, visibleFoodIds);
+  }, [meals, checkedItemsByMeal, visibleFoodIds]);
 
   useEffect(() => {
     if (user) {
@@ -408,12 +423,21 @@ export default function App() {
       if (!user) return;
 
       if (shouldComplete) {
-        syncTrackerToFirebase(dateKey, calculateFullCompletionSummary(meals));
+        syncTrackerToFirebase(
+          dateKey,
+          calculateFullCompletionSummary(meals, visibleFoodIds),
+        );
       } else {
         clearTrackerDayInFirebase(dateKey);
       }
     },
-    [user, meals, syncTrackerToFirebase, clearTrackerDayInFirebase],
+    [
+      user,
+      meals,
+      visibleFoodIds,
+      syncTrackerToFirebase,
+      clearTrackerDayInFirebase,
+    ],
   );
 
   const clearDailyPrepState = useCallback(() => {
@@ -540,7 +564,7 @@ export default function App() {
       );
 
       const displayableAnchors = [];
-      FOOD_GROUPS.forEach((food) => {
+      foodGroups.forEach((food) => {
         if ((mealFoods[food.id] || 0) <= 0) return;
         if (subByAnchor.has(food.id)) {
           displayableAnchors.push(food.id);
@@ -704,45 +728,10 @@ export default function App() {
     meals,
     calorieGoal,
     prepDays,
+    foodGroups,
   });
 
   const priceTracker = usePriceTracker({ shoppingList });
-
-  const authControls = !user ? (
-    <button
-      onClick={handleSaveClick}
-      className='px-5 py-2.5 border-4 border-black bg-[#FFD600] text-black text-sm font-black uppercase tracking-wide shadow-[5px_5px_0px_0px_rgba(0,0,0,1)] active:translate-x-1 active:translate-y-1 active:shadow-none transition-all'
-    >
-      Sync with Google
-    </button>
-  ) : (
-    <div className='flex items-center gap-3 flex-wrap justify-center0'>
-      <button
-        onClick={() => setIsMealPlansModalVisible(true)}
-        className='w-32.5 sm:w-40 px-4 py-2 border-4 border-black bg-white text-black text-xs sm:text-sm font-black uppercase tracking-wide shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] active:translate-x-0.75 active:translate-y-0.75 active:shadow-none transition-all'
-      >
-        {hasActiveSavedPlan ? "Switch plan" : "Save plan"}
-      </button>
-      {user.photoURL && user.photoURL !== brokenProfileImageUrl ? (
-        <img
-          src={user.photoURL}
-          alt='Profile'
-          onError={() => setBrokenProfileImageUrl(user.photoURL)}
-          className='w-11 h-11 rounded-full object-cover border-4 border-black mx-1'
-        />
-      ) : (
-        <div className='w-11 h-11 rounded-full bg-slate-200 text-slate-700 text-sm font-black flex items-center justify-center border-4 border-black mx-1'>
-          {(user.displayName?.[0] || user.email?.[0] || "U").toUpperCase()}
-        </div>
-      )}
-      <button
-        onClick={handleSignOut}
-        className='w-32.5 sm:w-40 px-4 py-2 border-4 border-black bg-white text-black text-xs sm:text-sm font-black uppercase tracking-wide shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] active:translate-x-0.75 active:translate-y-0.75 active:shadow-none transition-all'
-      >
-        Sign out
-      </button>
-    </div>
-  );
 
   // --- RENDERERS ---
   return (
@@ -769,6 +758,7 @@ export default function App() {
             mealToPrepare={mealToPrepare}
             setMealToPrepare={setMealToPrepare}
             checkedItems={checkedItems}
+            foodGroups={foodGroups}
             substitutions={substitutionsForMeal}
             isSubstitutionMode={isSubstitutionMode}
             selectedSubstitutionAnchors={selectedSubstitutionAnchors}
@@ -808,8 +798,13 @@ export default function App() {
             carbsPct={carbsPct}
             fatsPct={fatsPct}
             proteinPct={proteinPct}
-            activeMealPlanName={activeMealPlanName}
-            authControls={authControls}
+            foodGroups={foodGroups}
+            plannerTitle={plannerTitle}
+            user={user}
+            onOpenFoodGroups={() => setIsFoodGroupsModalOpen(true)}
+            onOpenMealPlans={() => setIsMealPlansModalVisible(true)}
+            onSignIn={handleSaveClick}
+            onSignOut={handleSignOut}
           />
         )}
 
@@ -848,9 +843,22 @@ export default function App() {
         onDeletePlan={handleDeleteMealPlan}
       />
 
+      <FoodGroupsModal
+        isOpen={isFoodGroupsModalOpen}
+        onClose={() => setIsFoodGroupsModalOpen(false)}
+        allFoodGroups={allFoodGroups}
+        onAdd={addFoodGroup}
+        onUpdate={updateFoodGroup}
+        onDelete={deleteFoodGroup}
+        onSetHidden={setFoodGroupHidden}
+        onMove={moveFoodGroup}
+        getUsage={getFoodGroupUsage}
+      />
+
       <SubstitutionsModal
         isOpen={isSubstitutionModalOpen}
         mealName={modalMealName}
+        foodGroups={foodGroups}
         sources={modalSelectionInfo.sources}
         restoreInfo={modalSelectionInfo.restoreInfo}
         onClose={cancelSubstitutionMode}
