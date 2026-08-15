@@ -260,7 +260,7 @@ export default function PlannerTab({
         })}
       </div>
 
-      <div className='w-full flex flex-col items-center gap-4 pt-1'>
+      <div className='w-full flex flex-col items-center gap-9 pt-1'>
         <div className='w-full max-w-md sm:max-w-lg flex items-center justify-center gap-1.5 sm:gap-3'>
           {user ? (
             <>
