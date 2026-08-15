@@ -158,7 +158,7 @@ export default function MealPlansModal({
       <div className='relative z-10 w-full max-w-2xl bg-white border-4 border-black shadow-[9px_9px_0px_0px_rgba(0,0,0,1)] overflow-hidden'>
         <div className='flex items-start justify-between px-4 py-4 sm:px-6 sm:py-5 border-b-4 border-black bg-[#FFD600]'>
           <h2 className='text-xl sm:text-2xl font-black uppercase tracking-wide text-black'>
-            Your meal plans
+            {isFormOpen ? formTitle : "Your meal plans"}
           </h2>
           <button
             type='button'
@@ -264,10 +264,6 @@ export default function MealPlansModal({
         {isFormOpen && (
           <div className='px-4 py-4 sm:px-6 sm:py-5 bg-white'>
             <form className='space-y-3' onSubmit={handleSubmit}>
-              <h3 className='text-sm md:text-base font-black uppercase tracking-wide text-black'>
-                {formTitle}
-              </h3>
-
               <div>
                 <label className={labelClass} htmlFor='meal-plan-name'>
                   Name
