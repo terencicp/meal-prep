@@ -204,6 +204,117 @@ export function buildFoodGroupMap(foodGroups) {
   }, {});
 }
 
+// --- Substitution ranking ---
+// A substitution is always scaled to match the calories it replaces, so what
+// still separates one candidate from another is how those calories are built:
+// the split between carbs, fats and protein. Candidates are ranked on that
+// split, and ones whose split is equally close are then ordered by how close
+// their portion size lands to the original.
+const MACRO_KCAL_PER_GRAM = { carbs: 4, fats: 9, protein: 4 };
+
+// Splits closer than this count as equally similar, so the portion size gets
+// to decide between them instead of a rounding-level difference.
+const MACRO_SPLIT_PRECISION = 1000;
+
+// Sentinels for foods we cannot score, kept finite so comparing two of them
+// stays a number.
+const NO_MACRO_DATA = 2;
+const NO_PORTION_DATA = Number.MAX_SAFE_INTEGER;
+
+function getMacroEnergySplit({ carbs, fats, protein }) {
+  const fromCarbs = (Number(carbs) || 0) * MACRO_KCAL_PER_GRAM.carbs;
+  const fromFats = (Number(fats) || 0) * MACRO_KCAL_PER_GRAM.fats;
+  const fromProtein = (Number(protein) || 0) * MACRO_KCAL_PER_GRAM.protein;
+  const total = fromCarbs + fromFats + fromProtein;
+
+  if (!(total > 0)) {
+    return null;
+  }
+
+  return {
+    carbs: fromCarbs / total,
+    fats: fromFats / total,
+    protein: fromProtein / total,
+  };
+}
+
+// 0 when two foods draw their calories from the macros in the same
+// proportions, 1 when they have no overlap at all.
+function getMacroSplitDistance(a, b) {
+  return (
+    (Math.abs(a.carbs - b.carbs) +
+      Math.abs(a.fats - b.fats) +
+      Math.abs(a.protein - b.protein)) /
+    2
+  );
+}
+
+function sumSourceNutrition(sources) {
+  return (sources || []).reduce(
+    (totals, source) => {
+      const food = source?.food;
+      const grams = source?.grams;
+      if (!food || !Number.isFinite(grams) || grams <= 0) {
+        return totals;
+      }
+
+      const portions = grams / 100;
+      return {
+        carbs: totals.carbs + (Number(food.carbs) || 0) * portions,
+        fats: totals.fats + (Number(food.fats) || 0) * portions,
+        protein: totals.protein + (Number(food.protein) || 0) * portions,
+        kCal: totals.kCal + (Number(food.kCal) || 0) * portions,
+        grams: totals.grams + grams,
+      };
+    },
+    { carbs: 0, fats: 0, protein: 0, kCal: 0, grams: 0 },
+  );
+}
+
+// Sorts candidates so the most nutritionally similar replacements come first.
+// Sources are the foods being replaced, as [{ food, grams }].
+export function rankSubstitutionCandidates(candidates, sources) {
+  const totals = sumSourceNutrition(sources);
+  const sourceSplit = getMacroEnergySplit(totals);
+
+  // Nothing to compare against, so the catalog order stands.
+  if (!sourceSplit) {
+    return [...candidates];
+  }
+
+  const sourceDensity =
+    totals.grams > 0 ? (totals.kCal * 100) / totals.grams : 0;
+
+  return candidates
+    .map((food, index) => {
+      const split = getMacroEnergySplit(food);
+      const distance = split
+        ? getMacroSplitDistance(split, sourceSplit)
+        : NO_MACRO_DATA;
+
+      return {
+        food,
+        index,
+        splitScore:
+          distance === NO_MACRO_DATA
+            ? NO_MACRO_DATA
+            : Math.round(distance * MACRO_SPLIT_PRECISION) /
+              MACRO_SPLIT_PRECISION,
+        portionScore:
+          food.kCal > 0 && sourceDensity > 0
+            ? Math.abs(Math.log(food.kCal / sourceDensity))
+            : NO_PORTION_DATA,
+      };
+    })
+    .sort(
+      (a, b) =>
+        a.splitScore - b.splitScore ||
+        a.portionScore - b.portionScore ||
+        a.index - b.index,
+    )
+    .map((entry) => entry.food);
+}
+
 export function moveIdInOrder(order, id, direction) {
   const currentIndex = order.indexOf(id);
   const nextIndex = currentIndex + (direction === "up" ? -1 : 1);

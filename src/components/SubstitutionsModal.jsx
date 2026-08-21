@@ -1,6 +1,9 @@
 import React, { useMemo } from "react";
 import { X } from "lucide-react";
-import { buildFoodGroupMap } from "../data/foodGroups";
+import {
+  buildFoodGroupMap,
+  rankSubstitutionCandidates,
+} from "../data/foodGroups";
 
 export default function SubstitutionsModal({
   isOpen,
@@ -60,12 +63,16 @@ export default function SubstitutionsModal({
       resolvedSources.length === 1
         ? foodGroups.filter((food) => !sourceIdSet.has(food.id))
         : foodGroups;
-    return candidates.map((food) => ({
-      id: food.id,
-      name: food.name,
-      grams:
-        food.kCal > 0 ? Math.round((targetCalories * 100) / food.kCal) : 0,
-    }));
+    // Closest nutritional match first, so the top of the list is the swap that
+    // changes the meal the least.
+    return rankSubstitutionCandidates(candidates, resolvedSources).map(
+      (food) => ({
+        id: food.id,
+        name: food.name,
+        grams:
+          food.kCal > 0 ? Math.round((targetCalories * 100) / food.kCal) : 0,
+      }),
+    );
   }, [resolvedSources, sourceIdSet, targetCalories, foodGroups]);
 
   if (!isOpen || resolvedSources.length === 0) {
