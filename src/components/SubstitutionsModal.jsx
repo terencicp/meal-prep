@@ -5,6 +5,8 @@ import { buildFoodGroupMap } from "../data/foodGroups";
 export default function SubstitutionsModal({
   isOpen,
   mealName,
+  // Every group in the active plan, hidden ones included: a hidden group is
+  // kept out of the planner but is still a valid replacement here.
   foodGroups,
   sources,
   restoreInfo,

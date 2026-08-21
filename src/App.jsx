@@ -772,6 +772,7 @@ export default function App() {
             setMealToPrepare={setMealToPrepare}
             checkedItems={checkedItems}
             foodGroups={foodGroups}
+            allFoodGroups={allFoodGroups}
             substitutions={substitutionsForMeal}
             isSubstitutionMode={isSubstitutionMode}
             selectedSubstitutionAnchors={selectedSubstitutionAnchors}
@@ -871,7 +872,7 @@ export default function App() {
       <SubstitutionsModal
         isOpen={isSubstitutionModalOpen}
         mealName={modalMealName}
-        foodGroups={foodGroups}
+        foodGroups={allFoodGroups}
         sources={modalSelectionInfo.sources}
         restoreInfo={modalSelectionInfo.restoreInfo}
         onClose={cancelSubstitutionMode}

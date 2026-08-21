@@ -15,6 +15,7 @@ export default function PrepareMealTab({
   setMealToPrepare,
   checkedItems,
   foodGroups,
+  allFoodGroups,
   substitutions,
   isSubstitutionMode,
   selectedSubstitutionAnchors,
@@ -24,7 +25,9 @@ export default function PrepareMealTab({
   setActiveTab,
   trackerLast30DaysPercent,
 }) {
-  const foodGroupById = buildFoodGroupMap(foodGroups);
+  // Rows come from the visible groups, but a substitution can point at a hidden
+  // group, so names and calories are looked up in the plan's whole catalog.
+  const foodGroupById = buildFoodGroupMap(allFoodGroups || foodGroups);
 
   const subByAnchor = new Map();
   const sourceIdsInSubs = new Set();
