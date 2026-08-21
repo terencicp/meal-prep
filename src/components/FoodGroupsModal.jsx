@@ -6,6 +6,7 @@ import {
   EyeOff,
   Pencil,
   Plus,
+  Trash2,
   X,
 } from "lucide-react";
 import {
@@ -29,18 +30,11 @@ const inputClass =
   "w-full px-3 py-2.5 border-4 border-black bg-white text-sm md:text-base font-bold text-black placeholder:text-slate-500 focus:outline-none focus:bg-[#FFD600]";
 const labelClass =
   "block text-xs font-black uppercase tracking-wide text-black mb-1.5";
-const iconButtonClass =
-  "p-1.5 border-2 border-black bg-white text-black disabled:opacity-30 disabled:cursor-not-allowed";
+const iconButtonBaseClass =
+  "p-1.5 border-2 border-black disabled:opacity-30 disabled:cursor-not-allowed";
+const iconButtonClass = `${iconButtonBaseClass} bg-white text-black`;
 const formButtonClass =
   "flex-1 px-4 py-2.5 border-4 border-black text-sm font-black uppercase tracking-wide";
-
-function buildDeleteMessage(usage) {
-  if (usage.mealCount === 0) {
-    return "Delete this food group?";
-  }
-
-  return `Used in ${usage.mealCount} meal${usage.mealCount === 1 ? "" : "s"} of this plan. Deleting sets those grams to 0.`;
-}
 
 export default function FoodGroupsModal({
   isOpen,
@@ -57,7 +51,7 @@ export default function FoodGroupsModal({
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [draft, setDraft] = useState(EMPTY_DRAFT);
   const [showErrors, setShowErrors] = useState(false);
-  const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
+  const [pendingDeleteId, setPendingDeleteId] = useState(null);
 
   if (!isOpen) {
     return null;
@@ -65,7 +59,7 @@ export default function FoodGroupsModal({
 
   const visibleCount = allFoodGroups.filter((food) => !food.isHidden).length;
   const customCount = allFoodGroups.filter((food) => food.isCustom).length;
-  const isEditingLastVisible = Boolean(editingId) && visibleCount <= 1;
+  const isLastGroup = allFoodGroups.length <= 1;
   const validation = validateFoodGroupDraft(draft, {
     allFoodGroups,
     editingId,
@@ -76,7 +70,7 @@ export default function FoodGroupsModal({
     setEditingId(null);
     setDraft(EMPTY_DRAFT);
     setShowErrors(false);
-    setIsConfirmingDelete(false);
+    setPendingDeleteId(null);
   };
 
   const handleClose = () => {
@@ -88,12 +82,12 @@ export default function FoodGroupsModal({
     setEditingId(null);
     setDraft(EMPTY_DRAFT);
     setShowErrors(false);
-    setIsConfirmingDelete(false);
+    setPendingDeleteId(null);
     setIsFormOpen(true);
   };
 
   const openEditForm = (food) => {
-    setIsConfirmingDelete(false);
+    setPendingDeleteId(null);
     setEditingId(food.id);
     setDraft({
       name: food.name,
@@ -126,8 +120,8 @@ export default function FoodGroupsModal({
   };
 
   const confirmDelete = () => {
-    onDelete(editingId);
-    closeForm();
+    onDelete(pendingDeleteId);
+    setPendingDeleteId(null);
   };
 
   const renderField = (field, label, extraProps = {}) => (
@@ -192,6 +186,7 @@ export default function FoodGroupsModal({
             <div className='max-h-90 overflow-y-auto pr-1 space-y-3'>
               {allFoodGroups.map((food, index) => {
                 const isLastVisible = !food.isHidden && visibleCount <= 1;
+                const isConfirmingDelete = pendingDeleteId === food.id;
 
                 return (
                   <div
@@ -262,8 +257,57 @@ export default function FoodGroupsModal({
                             <Eye className='w-5 h-5' />
                           )}
                         </button>
+
+                        <button
+                          type='button'
+                          onClick={() =>
+                            setPendingDeleteId(
+                              isConfirmingDelete ? null : food.id,
+                            )
+                          }
+                          disabled={isLastGroup}
+                          title={
+                            isLastGroup
+                              ? "At least one food group is required"
+                              : undefined
+                          }
+                          className={`${iconButtonBaseClass} ${
+                            isConfirmingDelete
+                              ? "bg-[#FF2A5F] text-white"
+                              : "bg-white text-black"
+                          }`}
+                          aria-label={`Delete ${food.name}`}
+                        >
+                          <Trash2 className='w-5 h-5' />
+                        </button>
                       </div>
                     </div>
+
+                    {isConfirmingDelete && (
+                      <div className='mt-3'>
+                        {getUsage(food.id).mealCount > 0 && (
+                          <p className='text-xs md:text-sm font-bold text-[#FF2A5F]'>
+                            This group is currently being used in this plan.
+                          </p>
+                        )}
+                        <div className='flex gap-2.5 mt-2.5'>
+                          <button
+                            type='button'
+                            onClick={() => setPendingDeleteId(null)}
+                            className={`${formButtonClass} bg-white text-black hover:bg-[#F2F2F2]`}
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            type='button'
+                            onClick={confirmDelete}
+                            className={`${formButtonClass} bg-[#FF2A5F] text-white transition-transform hover:translate-x-px hover:translate-y-px`}
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 );
               })}
@@ -334,57 +378,21 @@ export default function FoodGroupsModal({
                 </p>
               </div>
 
-              {isConfirmingDelete && (
-                <p className='text-xs md:text-sm font-bold text-black'>
-                  {buildDeleteMessage(getUsage(editingId))}
-                </p>
-              )}
-
               <div className='flex gap-2.5'>
                 <button
                   type='button'
-                  onClick={
-                    isConfirmingDelete
-                      ? () => setIsConfirmingDelete(false)
-                      : closeForm
-                  }
+                  onClick={closeForm}
                   className={`${formButtonClass} bg-white text-black hover:bg-[#F2F2F2]`}
                 >
                   Cancel
                 </button>
 
-                {editingId && (
-                  <button
-                    type='button'
-                    onClick={
-                      isConfirmingDelete
-                        ? confirmDelete
-                        : () => setIsConfirmingDelete(true)
-                    }
-                    disabled={isEditingLastVisible}
-                    title={
-                      isEditingLastVisible
-                        ? "At least one food group is required"
-                        : undefined
-                    }
-                    className={`${formButtonClass} text-black hover:bg-[#FF2A5F] hover:text-white disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:text-black ${
-                      isConfirmingDelete
-                        ? "bg-[#FF2A5F] text-white"
-                        : "bg-white"
-                    }`}
-                  >
-                    Delete
-                  </button>
-                )}
-
-                {!isConfirmingDelete && (
-                  <button
-                    type='submit'
-                    className={`${formButtonClass} bg-black text-white transition-transform hover:translate-x-px hover:translate-y-px`}
-                  >
-                    {editingId ? "Save" : "Add"}
-                  </button>
-                )}
+                <button
+                  type='submit'
+                  className={`${formButtonClass} bg-black text-white transition-transform hover:translate-x-px hover:translate-y-px`}
+                >
+                  {editingId ? "Save" : "Add"}
+                </button>
               </div>
             </form>
           </div>

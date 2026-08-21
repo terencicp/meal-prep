@@ -9,7 +9,12 @@ const PREDEFINED_IDS = FOOD_GROUPS.map((food) => food.id);
 // Shopping amounts for these are counted in units instead of weight.
 export const UNIT_WEIGHTS_BY_ID = { eggs: 50, yogurt: 120 };
 
-export const EMPTY_FOOD_GROUP_CATALOG = { custom: [], hidden: [], order: [] };
+export const EMPTY_FOOD_GROUP_CATALOG = {
+  custom: [],
+  hidden: [],
+  order: [],
+  removed: [],
+};
 
 export const CUSTOM_FOOD_GROUP_ID_PREFIX = "custom_";
 export const MAX_CUSTOM_FOOD_GROUPS = 30;
@@ -110,6 +115,13 @@ export function normalizeFoodGroupCatalog(raw) {
   const takenIds = new Set(PREDEFINED_IDS);
   const custom = [];
 
+  // Deleted predefined groups stay deleted for this catalog only. Their ids
+  // remain taken so a later custom group can never reuse them.
+  const removed = uniqueStrings(source.removed).filter((id) =>
+    takenIds.has(id),
+  );
+  const removedIds = new Set(removed);
+
   (Array.isArray(source.custom) ? source.custom : []).forEach((entry) => {
     if (custom.length >= MAX_CUSTOM_FOOD_GROUPS) {
       return;
@@ -124,12 +136,13 @@ export function normalizeFoodGroupCatalog(raw) {
     custom.push(normalized);
   });
 
-  const knownIds = new Set(takenIds);
+  const knownIds = new Set([...takenIds].filter((id) => !removedIds.has(id)));
 
   return {
     custom,
     hidden: uniqueStrings(source.hidden).filter((id) => knownIds.has(id)),
     order: uniqueStrings(source.order).filter((id) => knownIds.has(id)),
+    removed,
   };
 }
 
@@ -145,8 +158,12 @@ export function resolveAllFoodGroups(catalogInput) {
     isHidden: hiddenIds.has(food.id),
   });
 
+  const removedIds = new Set(catalog.removed);
+
   const all = [
-    ...PREDEFINED_FOOD_GROUPS.map((food) => decorate(food, false)),
+    ...PREDEFINED_FOOD_GROUPS.filter((food) => !removedIds.has(food.id)).map(
+      (food) => decorate(food, false),
+    ),
     ...catalog.custom.map((food) => decorate(food, true)),
   ];
 

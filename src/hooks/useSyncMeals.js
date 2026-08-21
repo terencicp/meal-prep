@@ -26,6 +26,7 @@ import {
   PLAN_NAME_MAX_LENGTH,
 } from "../data/constants";
 import {
+  CUSTOM_FOOD_GROUP_ID_PREFIX,
   EMPTY_FOOD_GROUP_CATALOG,
   MAX_CUSTOM_FOOD_GROUPS,
   countFoodGroupUsage,
@@ -73,12 +74,13 @@ function normalizePlanDescription(value) {
     : "";
 }
 
-// The three catalog fields live on the plan doc now. They also still exist on
-// legacy user docs, where the same reader handles the one-time migration.
+// The catalog fields live on the plan doc now. They also still exist on legacy
+// user docs, where the same reader handles the one-time migration.
 function readCatalogFields(data) {
   const hasCatalog =
     Array.isArray(data?.customFoodGroups) ||
     Array.isArray(data?.hiddenFoodGroupIds) ||
+    Array.isArray(data?.removedFoodGroupIds) ||
     Array.isArray(data?.foodGroupOrder);
 
   if (!hasCatalog) {
@@ -88,6 +90,7 @@ function readCatalogFields(data) {
   return normalizeFoodGroupCatalog({
     custom: data.customFoodGroups,
     hidden: data.hiddenFoodGroupIds,
+    removed: data.removedFoodGroupIds,
     order: data.foodGroupOrder,
   });
 }
@@ -96,6 +99,7 @@ function toCatalogFields(catalog) {
   return {
     customFoodGroups: catalog.custom,
     hiddenFoodGroupIds: catalog.hidden,
+    removedFoodGroupIds: catalog.removed,
     foodGroupOrder: catalog.order,
   };
 }
@@ -629,14 +633,23 @@ export function useSyncMeals() {
     });
   };
 
+  // Predefined groups have no entry to drop, so deleting one is recorded as a
+  // removal on this plan's catalog. A brand new plan starts without it and
+  // therefore gets the full predefined list back.
   const deleteFoodGroup = (id) => {
     const catalog = foodGroupCatalogRef.current;
+    if (allFoodGroups.length <= 1) {
+      return;
+    }
+
+    const isPredefined = !id.startsWith(CUSTOM_FOOD_GROUP_ID_PREFIX);
     purgeFoodGroupFromMeals(id);
 
     applyFoodGroupCatalog({
       custom: catalog.custom.filter((food) => food.id !== id),
       hidden: catalog.hidden.filter((hiddenId) => hiddenId !== id),
       order: catalog.order.filter((orderedId) => orderedId !== id),
+      removed: isPredefined ? [...catalog.removed, id] : catalog.removed,
     });
   };
 
