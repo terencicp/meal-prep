@@ -99,12 +99,6 @@ export default function PrepTab({
           )}
         </div>
       </div>
-
-      {hasFood && (
-        <p className='mt-4 text-xs text-slate-500 text-center px-2 font-bold'>
-          Raw weights, before grains swell and vegetables are trimmed.
-        </p>
-      )}
     </div>
   );
 }
