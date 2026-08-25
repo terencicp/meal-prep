@@ -1,5 +1,6 @@
 import React from "react";
 import { CookingPot, CheckCircle2, Circle } from "lucide-react";
+import { getCookRatio } from "../data/foodGroups";
 
 export default function PrepTab({
   dailyFoodTotals,
@@ -13,10 +14,11 @@ export default function PrepTab({
   return (
     <div className='w-full max-w-116 mx-auto px-3 sm:px-0'>
       <div className='bg-white border-4 border-black shadow-[7px_7px_0px_0px_rgba(0,0,0,1)] overflow-hidden'>
-        <div className='bg-[#FFD600] px-3 py-4 border-b-4 border-black'>
+        <div className='bg-[#FFD600] px-4 py-4 border-b-4 border-black'>
           <div className='flex items-center justify-between gap-3'>
-            <h3 className='text-base sm:text-lg font-black uppercase tracking-wide text-black'>
-              Cook for
+            <h3 className='text-lg font-black uppercase tracking-wide text-black whitespace-nowrap'>
+              <span className='sm:hidden'>Cook</span>
+              <span className='hidden sm:inline'>Cook for</span>
             </h3>
             <div className='flex items-center'>
               <button
@@ -50,6 +52,10 @@ export default function PrepTab({
           ) : (
             dailyFoodTotals.map((food) => {
               const isCooked = Boolean(cookedItems[food.id]);
+              const cookRatio = getCookRatio(food);
+              const cookGrams = Math.round(
+                food.dailyGrams * cookDays * cookRatio,
+              );
               const strikeThrough = isCooked
                 ? "line-through decoration-[3px] decoration-black text-black"
                 : "text-black";
@@ -86,9 +92,18 @@ export default function PrepTab({
                     >
                       {food.name}
                     </span>
+                    {cookRatio < 1 && (
+                      <span
+                        className={`ml-2 text-xs font-black uppercase tracking-wide ${
+                          isCooked ? "text-black/50" : "text-black/60"
+                        }`}
+                      >
+                        Dry
+                      </span>
+                    )}
                   </div>
                   <span className={`text-xl font-black ${strikeThrough}`}>
-                    {food.dailyGrams * cookDays}
+                    {cookGrams}
                     <span className='text-sm font-bold ml-1'>g</span>
                   </span>
                 </div>
