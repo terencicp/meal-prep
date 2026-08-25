@@ -9,10 +9,10 @@ import {
 import { MEAL_NAMES } from "../data/constants";
 import { buildFoodGroupMap } from "../data/foodGroups";
 
-export default function PrepareMealTab({
+export default function EatTab({
   meals,
-  mealToPrepare,
-  setMealToPrepare,
+  mealToEat,
+  setMealToEat,
   checkedItems,
   foodGroups,
   allFoodGroups,
@@ -44,7 +44,7 @@ export default function PrepareMealTab({
     sub.sourceIds.forEach((id) => sourceIdsInSubs.add(id));
   });
 
-  const mealFoods = meals[mealToPrepare] || {};
+  const mealFoods = meals[mealToEat] || {};
   const displayRows = [];
   foodGroups.forEach((food) => {
     const amount = mealFoods[food.id] || 0;
@@ -116,10 +116,10 @@ export default function PrepareMealTab({
               <button
                 key={meal}
                 onClick={() => {
-                  setMealToPrepare(meal);
+                  setMealToEat(meal);
                 }}
                 className={`min-w-0 px-2 py-2 sm:py-3 border-4 border-black text-base sm:text-lg font-black uppercase tracking-wide transition-colors text-center whitespace-nowrap ${
-                  mealToPrepare === meal
+                  mealToEat === meal
                     ? "bg-black text-white"
                     : "bg-white text-black hover:bg-[#FFF176]"
                 }`}
@@ -141,7 +141,7 @@ export default function PrepareMealTab({
             <div className='px-6 py-10 text-center text-black'>
               <Utensils className='w-12 h-12 mx-auto mb-3 text-black' />
               <p className='font-bold uppercase tracking-wide text-sm'>
-                No ingredients planned for {mealToPrepare.toLowerCase()}.
+                No ingredients planned for {mealToEat.toLowerCase()}.
               </p>
             </div>
           ) : (

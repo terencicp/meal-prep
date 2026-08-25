@@ -41,23 +41,32 @@ export function useMealCalculations({
     return totals;
   }, [mealTotals, meals, foodGroups]);
 
+  // One day's worth of each food group, summed across every meal. Feeds both
+  // the cooking list and the shopping list, so the two can never disagree.
+  const dailyFoodTotals = useMemo(() => {
+    return foodGroups
+      .map((food) => ({
+        ...food,
+        dailyGrams: Object.values(meals).reduce(
+          (acc, meal) => acc + (meal[food.id] || 0),
+          0,
+        ),
+      }))
+      .filter((item) => item.dailyGrams > 0);
+  }, [meals, foodGroups]);
+
   const shoppingList = useMemo(() => {
-    return foodGroups.map((food) => {
-      const dailyGrams = Object.values(meals).reduce(
-        (acc, meal) => acc + (meal[food.id] || 0),
-        0,
-      );
-      const prepGrams = dailyGrams * prepDays;
+    return dailyFoodTotals.map((food) => {
+      const prepGrams = food.dailyGrams * prepDays;
       const finalAmountKg = (prepGrams / 1000) * food.waste;
 
       return {
         ...food,
-        dailyGrams,
         finalAmountKg,
         hasWasteMultiplier: food.waste > 1.0,
       };
-    }).filter((item) => item.finalAmountKg > 0);
-  }, [meals, prepDays, foodGroups]);
+    });
+  }, [dailyFoodTotals, prepDays]);
 
   const macroKcalTotal =
     dailyTotals.carbs * 4 + dailyTotals.fats * 9 + dailyTotals.protein * 4;
@@ -77,6 +86,7 @@ export function useMealCalculations({
   return {
     mealTotals,
     dailyTotals,
+    dailyFoodTotals,
     shoppingList,
     carbsPct,
     fatsPct,
