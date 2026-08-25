@@ -7,7 +7,6 @@ It helps you:
 - Plan portions for breakfast, lunch, and dinner
 - See daily calories and macro totals while you plan
 - Set a calorie goal to avoid eating too little or too much
-- Batch-cook ahead with a list of how much to make of each food group
 - Follow your plan at each meal in a clean checklist view
 - Swap out meal food groups easily for convenience
 - Generate a shopping list and compare cost accross supermarkets
@@ -33,7 +32,7 @@ The `Food groups` button at the bottom of the `Meals` tab opens a modal where yo
 
 - **Add custom food groups** with a name, description, and calories, carbs, fats and protein per 100 g, plus an optional prep-loss multiplier (how much extra to buy to cover peel and trim — 1 means no loss). Custom groups can be edited or deleted later.
 - **Hide any group** you are not using right now, predefined or custom, and show it again at any time.
-- **Reorder every group** with the up and down arrows. The order applies to the planner, the cooking list, the eating checklist, and the shopping list.
+- **Reorder every group** with the up and down arrows. The order applies to the planner, the eating checklist, and the shopping list.
 
 Hiding or deleting a group that still has grams in a meal clears those grams, so totals always match what you see. **Food groups belong to the meal plan you are on**, so a cutting plan and a bulking plan can each have their own list. They are stored locally and sync to your account when you are signed in.
 
@@ -63,14 +62,10 @@ Then, set grams for each food group in:
 
 As you edit grams, PrepMaster recalculates calories, carbs, fats, and protein in real time.
 
-### 3) Prep
-
-In the `Prep` tab, choose how many days you are cooking for to get a single list of how much to make of each food group, totalled across all three meals. Tick off each one as you cook it. These ticks are just for your own place in the kitchen and do not count towards adherence.
-
-### 4) Eat
+### 3) Eat
 
 In the `Eat` tab, pick the meal you are about to eat to view a checklist with the amount for each food group. You can also use the substitutions button to swap out food groups. Use the adherence button to track how consistently you've been sticking to your meal plan.
 
-### 5) Shop
+### 4) Shop
 
-In the `Shop` tab, choose how many days you are shopping for to get a list of how much to buy per food group. It also includes a price tracker to help you find the best deals by comparing the estimated total cost across different stores.
+In the `Shop` tab, choose how many days you are shopping for to get a list of how much to buy per food group. The amounts are raw weights, so they are also what to cook: dry grains before they swell, vegetables before peel and trim come off. It also includes a price tracker to help you find the best deals by comparing the estimated total cost across different stores.

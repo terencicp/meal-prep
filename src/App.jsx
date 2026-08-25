@@ -14,11 +14,8 @@ import {
   LOCAL_STORAGE_PREP_STATE_KEY,
   LOCAL_STORAGE_MEALS_KEY,
   LOCAL_STORAGE_SETTINGS_KEY,
-  LOCAL_STORAGE_COOK_DAYS_KEY,
-  DEFAULT_COOK_DAYS,
 } from "./data/constants";
 import Header from "./components/Header";
-import PrepTab from "./components/PrepTab";
 import EatTab from "./components/EatTab";
 import PlannerTab from "./components/PlannerTab";
 import ShoppingTab from "./components/ShoppingTab";
@@ -51,16 +48,6 @@ function hasStoredPlannerData() {
   } catch (error) {
     console.error("Failed to read planner data from localStorage:", error);
     return false;
-  }
-}
-
-function loadCookDaysFromLocalStorage() {
-  try {
-    const stored = Number(localStorage.getItem(LOCAL_STORAGE_COOK_DAYS_KEY));
-    return Number.isInteger(stored) && stored > 0 ? stored : DEFAULT_COOK_DAYS;
-  } catch (error) {
-    console.error("Failed to read cook days from localStorage:", error);
-    return DEFAULT_COOK_DAYS;
   }
 }
 
@@ -129,7 +116,6 @@ function loadPrepStateFromLocalStorage() {
         dateKey: todayKey,
         checkedItemsByMeal: {},
         prepSubstitutionsByMeal: {},
-        cookedItems: {},
       };
     }
 
@@ -139,7 +125,6 @@ function loadPrepStateFromLocalStorage() {
         dateKey: todayKey,
         checkedItemsByMeal: {},
         prepSubstitutionsByMeal: {},
-        cookedItems: {},
       };
     }
 
@@ -151,7 +136,6 @@ function loadPrepStateFromLocalStorage() {
       prepSubstitutionsByMeal: normalizePrepSubstitutionsByMeal(
         parsedPrepState.prepSubstitutionsByMeal,
       ),
-      cookedItems: normalizePrepStateObject(parsedPrepState.cookedItems),
     };
   } catch (error) {
     console.error("Failed to load prep state from localStorage:", error);
@@ -159,7 +143,6 @@ function loadPrepStateFromLocalStorage() {
       dateKey: todayKey,
       checkedItemsByMeal: {},
       prepSubstitutionsByMeal: {},
-      cookedItems: {},
     };
   }
 }
@@ -168,7 +151,6 @@ function persistPrepStateToLocalStorage({
   dateKey,
   checkedItemsByMeal,
   prepSubstitutionsByMeal,
-  cookedItems,
 }) {
   try {
     localStorage.setItem(
@@ -177,7 +159,6 @@ function persistPrepStateToLocalStorage({
         dateKey,
         checkedItemsByMeal,
         prepSubstitutionsByMeal,
-        cookedItems,
       }),
     );
   } catch (error) {
@@ -308,10 +289,6 @@ export default function App() {
   } = useSyncTracker();
   const initialPrepStateRef = useRef(loadPrepStateFromLocalStorage());
   const [mealToEat, setMealToEat] = useState(getDefaultMealByLocalHour);
-  const [cookDays, setCookDays] = useState(loadCookDaysFromLocalStorage);
-  const [cookedItems, setCookedItems] = useState(
-    initialPrepStateRef.current.cookedItems,
-  );
   const [checkedItemsByMeal, setCheckedItemsByMeal] = useState(
     initialPrepStateRef.current.checkedItemsByMeal,
   );
@@ -477,7 +454,6 @@ export default function App() {
   const clearDailyPrepState = useCallback(() => {
     setCheckedItemsByMeal({});
     setPrepSubstitutionsByMeal({});
-    setCookedItems({});
     setSelectedSubstitutionAnchors([]);
     setIsSubstitutionMode(false);
     closeSubstitutionModal();
@@ -536,22 +512,8 @@ export default function App() {
       dateKey: prepStateDateKey,
       checkedItemsByMeal,
       prepSubstitutionsByMeal,
-      cookedItems,
     });
-  }, [
-    prepStateDateKey,
-    checkedItemsByMeal,
-    prepSubstitutionsByMeal,
-    cookedItems,
-  ]);
-
-  useEffect(() => {
-    try {
-      localStorage.setItem(LOCAL_STORAGE_COOK_DAYS_KEY, String(cookDays));
-    } catch (error) {
-      console.error("Failed to save cook days to localStorage:", error);
-    }
-  }, [cookDays]);
+  }, [prepStateDateKey, checkedItemsByMeal, prepSubstitutionsByMeal]);
 
   // --- HANDLERS ---
   const handleGramsChange = (mealName, foodId, value) => {
@@ -717,20 +679,6 @@ export default function App() {
     closeSubstitutionModal();
   };
 
-  // Cooking check-offs are deliberately kept out of checkedItemsByMeal so that
-  // adherence keeps counting only the food actually eaten.
-  const toggleCookedItem = (foodId) => {
-    setCookedItems((prev) => {
-      const next = { ...prev };
-      if (next[foodId]) {
-        delete next[foodId];
-      } else {
-        next[foodId] = true;
-      }
-      return next;
-    });
-  };
-
   const toggleShoppingItem = (foodId) => {
     setCheckedShoppingItems((prev) => ({
       ...prev,
@@ -781,7 +729,6 @@ export default function App() {
   const {
     mealTotals,
     dailyTotals,
-    dailyFoodTotals,
     shoppingList,
     carbsPct,
     fatsPct,
@@ -818,16 +765,6 @@ export default function App() {
             activeTab === "planner" ? "pt-6" : "pt-8"
           }`}
         >
-          {activeTab === "prep" && (
-            <PrepTab
-              dailyFoodTotals={dailyFoodTotals}
-              cookDays={cookDays}
-              setCookDays={setCookDays}
-              cookedItems={cookedItems}
-              toggleCookedItem={toggleCookedItem}
-            />
-          )}
-
           {activeTab === "eat" && (
             <EatTab
               meals={meals}

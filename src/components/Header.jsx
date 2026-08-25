@@ -1,11 +1,5 @@
 import React from "react";
-import {
-  Calculator,
-  ShoppingCart,
-  ChefHat,
-  CookingPot,
-  Utensils,
-} from "lucide-react";
+import { Calculator, ShoppingCart, ChefHat, Utensils } from "lucide-react";
 
 export default function Header({
   activeTab,
@@ -28,7 +22,6 @@ export default function Header({
 
   const TABS = [
     { name: "planner", label: "Meals", Icon: Calculator },
-    { name: "prep", label: "Prep", Icon: CookingPot },
     { name: "eat", label: "Eat", Icon: Utensils },
     { name: "shopping", label: "Shop", Icon: ShoppingCart },
   ];

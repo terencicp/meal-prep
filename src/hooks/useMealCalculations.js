@@ -43,8 +43,7 @@ export function useMealCalculations({
 
   // One day's worth of each food group, summed across every meal, as the weight
   // eaten and as the raw weight that weight starts from: dry grains before they
-  // swell, vegetables before peel and trim come off. Cooking and shopping both
-  // work from the raw figure, so the two can never disagree.
+  // swell, vegetables before peel and trim come off.
   const dailyFoodTotals = useMemo(() => {
     return foodGroups
       .map((food) => {
@@ -88,7 +87,6 @@ export function useMealCalculations({
   return {
     mealTotals,
     dailyTotals,
-    dailyFoodTotals,
     shoppingList,
     carbsPct,
     fatsPct,
