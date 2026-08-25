@@ -41,31 +41,33 @@ export function useMealCalculations({
     return totals;
   }, [mealTotals, meals, foodGroups]);
 
-  // One day's worth of each food group, summed across every meal. Feeds both
-  // the cooking list and the shopping list, so the two can never disagree.
+  // One day's worth of each food group, summed across every meal, as the weight
+  // eaten and as the raw weight that weight starts from: dry grains before they
+  // swell, vegetables before peel and trim come off. Cooking and shopping both
+  // work from the raw figure, so the two can never disagree.
   const dailyFoodTotals = useMemo(() => {
     return foodGroups
-      .map((food) => ({
-        ...food,
-        dailyGrams: Object.values(meals).reduce(
+      .map((food) => {
+        const dailyGrams = Object.values(meals).reduce(
           (acc, meal) => acc + (meal[food.id] || 0),
           0,
-        ),
-      }))
+        );
+
+        return {
+          ...food,
+          dailyGrams,
+          dailyRawGrams: dailyGrams * food.waste,
+        };
+      })
       .filter((item) => item.dailyGrams > 0);
   }, [meals, foodGroups]);
 
   const shoppingList = useMemo(() => {
-    return dailyFoodTotals.map((food) => {
-      const prepGrams = food.dailyGrams * prepDays;
-      const finalAmountKg = (prepGrams / 1000) * food.waste;
-
-      return {
-        ...food,
-        finalAmountKg,
-        hasWasteMultiplier: food.waste > 1.0,
-      };
-    });
+    return dailyFoodTotals.map((food) => ({
+      ...food,
+      finalAmountKg: (food.dailyRawGrams * prepDays) / 1000,
+      hasWasteMultiplier: food.waste > 1.0,
+    }));
   }, [dailyFoodTotals, prepDays]);
 
   const macroKcalTotal =

@@ -9,15 +9,6 @@ const PREDEFINED_IDS = FOOD_GROUPS.map((food) => food.id);
 // Shopping amounts for these are counted in units instead of weight.
 export const UNIT_WEIGHTS_BY_ID = { eggs: 50, yogurt: 120 };
 
-// How much of a food to put in the pot for every gram that ends up on the
-// plate. A purchase multiplier below 1 means the food is bought dry and swells
-// as it cooks, so the pot needs proportionally less. Above 1 it is peel and
-// trim loss, which is paid for at the shop and never changes what is cooked.
-export function getCookRatio(food) {
-  const waste = typeof food?.waste === "number" ? food.waste : 1;
-  return Math.min(waste, 1);
-}
-
 export const EMPTY_FOOD_GROUP_CATALOG = {
   custom: [],
   hidden: [],

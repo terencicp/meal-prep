@@ -1,6 +1,5 @@
 import React from "react";
 import { CookingPot, CheckCircle2, Circle } from "lucide-react";
-import { getCookRatio } from "../data/foodGroups";
 
 export default function PrepTab({
   dailyFoodTotals,
@@ -52,10 +51,7 @@ export default function PrepTab({
           ) : (
             dailyFoodTotals.map((food) => {
               const isCooked = Boolean(cookedItems[food.id]);
-              const cookRatio = getCookRatio(food);
-              const cookGrams = Math.round(
-                food.dailyGrams * cookDays * cookRatio,
-              );
+              const cookGrams = Math.round(food.dailyRawGrams * cookDays);
               const strikeThrough = isCooked
                 ? "line-through decoration-[3px] decoration-black text-black"
                 : "text-black";
@@ -92,15 +88,6 @@ export default function PrepTab({
                     >
                       {food.name}
                     </span>
-                    {cookRatio < 1 && (
-                      <span
-                        className={`ml-2 text-xs font-black uppercase tracking-wide ${
-                          isCooked ? "text-black/50" : "text-black/60"
-                        }`}
-                      >
-                        Dry
-                      </span>
-                    )}
                   </div>
                   <span className={`text-xl font-black ${strikeThrough}`}>
                     {cookGrams}
@@ -112,6 +99,12 @@ export default function PrepTab({
           )}
         </div>
       </div>
+
+      {hasFood && (
+        <p className='mt-4 text-xs text-slate-500 text-center px-2 font-bold'>
+          Raw weights, before grains swell and vegetables are trimmed.
+        </p>
+      )}
     </div>
   );
 }
