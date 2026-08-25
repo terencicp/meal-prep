@@ -145,7 +145,7 @@ export default function ShoppingTab({
           </div>
           <div className='flex items-center p-1 w-fit'>
             <button
-              onClick={() => setPrepDays(Math.max(1, prepDays - 1))}
+              onClick={() => setPrepDays((days) => Math.max(1, days - 1))}
               className='w-10 h-10 flex items-center justify-center border-4 border-black bg-white text-black font-black text-xl hover:bg-[#FFF176] transition-colors'
             >
               -
@@ -154,7 +154,7 @@ export default function ShoppingTab({
               {prepDays}
             </span>
             <button
-              onClick={() => setPrepDays(prepDays + 1)}
+              onClick={() => setPrepDays((days) => days + 1)}
               className='w-10 h-10 flex items-center justify-center border-4 border-black bg-white text-black font-black text-xl hover:bg-[#FFF176] transition-colors'
             >
               +

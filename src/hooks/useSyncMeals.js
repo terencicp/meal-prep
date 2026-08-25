@@ -502,9 +502,12 @@ export function useSyncMeals() {
     });
   };
 
+  // The value can be a function of the current one, so a burst of taps on a
+  // stepper each build on the last tap instead of on a stale render's value.
   const updateSettingField = (field, value, normalizer) => {
     setSettings((prev) => {
-      const nextValue = normalizer(value, prev[field]);
+      const rawValue = typeof value === "function" ? value(prev[field]) : value;
+      const nextValue = normalizer(rawValue, prev[field]);
       const nextSettings = {
         ...prev,
         [field]: nextValue,
