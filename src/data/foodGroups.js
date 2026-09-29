@@ -107,6 +107,7 @@ function normalizeCustomFoodGroup(raw, takenIds) {
       FOOD_GROUP_WASTE_MAX,
       1,
     ),
+    substitutable: raw.substitutable !== false,
   };
 }
 
@@ -154,6 +155,7 @@ export function resolveAllFoodGroups(catalogInput) {
     ...food,
     description: typeof food.description === "string" ? food.description : "",
     waste: typeof food.waste === "number" ? food.waste : 1,
+    substitutable: food.substitutable !== false,
     isCustom,
     isHidden: hiddenIds.has(food.id),
   });
@@ -438,6 +440,15 @@ export function validateFoodGroupDraft(draft, { allFoodGroups, editingId }) {
     errors,
     notices,
     isValid: Object.keys(errors).length === 0,
-    values: { name, description, kCal, carbs, fats, protein, waste },
+    values: {
+      name,
+      description,
+      kCal,
+      carbs,
+      fats,
+      protein,
+      waste,
+      substitutable: draft.substitutable !== false,
+    },
   };
 }

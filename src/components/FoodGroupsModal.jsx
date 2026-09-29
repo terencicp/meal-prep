@@ -24,6 +24,7 @@ const EMPTY_DRAFT = {
   fats: "",
   protein: "",
   waste: "1",
+  substitutable: true,
 };
 
 const inputClass =
@@ -97,6 +98,7 @@ export default function FoodGroupsModal({
       fats: String(food.fats),
       protein: String(food.protein),
       waste: String(food.waste),
+      substitutable: food.substitutable,
     });
     setShowErrors(false);
     setIsFormOpen(true);
@@ -367,12 +369,39 @@ export default function FoodGroupsModal({
               </div>
 
               <div>
-                {renderField("waste", "Prep loss multiplier", {
-                  type: "number",
-                  step: "0.1",
-                  min: "0.1",
-                  placeholder: "1",
-                })}
+                {/* Bottom-aligned so the boxes stay level when the multiplier
+                    label wraps on narrow screens. */}
+                <div className='grid grid-cols-2 items-end gap-3'>
+                  {renderField("waste", "Prep loss multiplier", {
+                    type: "number",
+                    step: "0.1",
+                    min: "0.1",
+                    placeholder: "1",
+                  })}
+
+                  <div>
+                    <label
+                      className={labelClass}
+                      htmlFor='food-group-substitutable'
+                    >
+                      Can substitute
+                    </label>
+                    <label className='flex items-center h-12 md:h-13 px-3 border-4 border-black bg-white cursor-pointer has-[:focus-visible]:bg-[#FFD600]'>
+                      <input
+                        id='food-group-substitutable'
+                        type='checkbox'
+                        checked={draft.substitutable}
+                        onChange={(event) =>
+                          setDraft((prev) => ({
+                            ...prev,
+                            substitutable: event.target.checked,
+                          }))
+                        }
+                        className='w-6 h-6 accent-black cursor-pointer'
+                      />
+                    </label>
+                  </div>
+                </div>
                 <p className='mt-1 text-xs font-bold text-black/60'>
                   Shopping multiplier to cover waste (1 = no loss)
                 </p>

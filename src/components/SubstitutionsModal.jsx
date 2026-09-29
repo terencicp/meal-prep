@@ -59,10 +59,13 @@ export default function SubstitutionsModal({
     if (resolvedSources.length === 0 || targetCalories <= 0) {
       return [];
     }
-    const candidates =
-      resolvedSources.length === 1
-        ? foodGroups.filter((food) => !sourceIdSet.has(food.id))
-        : foodGroups;
+    // Groups flagged as not substitutable (e.g. an oil nobody eats on its
+    // own) are never offered as a replacement.
+    const candidates = foodGroups.filter(
+      (food) =>
+        food.substitutable &&
+        (resolvedSources.length > 1 || !sourceIdSet.has(food.id)),
+    );
     // Closest nutritional match first, so the top of the list is the swap that
     // changes the meal the least.
     return rankSubstitutionCandidates(candidates, resolvedSources).map(
