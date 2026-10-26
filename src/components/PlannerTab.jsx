@@ -187,7 +187,6 @@ export default function PlannerTab({
           const mealFats = Math.max(0, mealTotals[meal].fats);
           const mealProtein = Math.max(0, mealTotals[meal].protein);
           const totalMacros = Math.max(1, mealCarbs + mealFats + mealProtein);
-          const dividerIds = mealDividers[meal] || [];
 
           return (
             <div
@@ -228,7 +227,7 @@ export default function PlannerTab({
                 {foodGroups.map((food, index) => {
                   const grams = meals[meal]?.[food.id] || "";
                   const isActive = grams > 0;
-                  const hasDivider = dividerIds.includes(food.id);
+                  const hasDivider = mealDividers.includes(food.id);
 
                   return (
                     <React.Fragment key={food.id}>
@@ -239,7 +238,7 @@ export default function PlannerTab({
                           )}
                           <button
                             type='button'
-                            onClick={() => onToggleMealDivider(meal, food.id)}
+                            onClick={() => onToggleMealDivider(food.id)}
                             aria-label={`${hasDivider ? "Remove" : "Add"} divider before ${food.name} in ${meal}`}
                             aria-pressed={hasDivider}
                             title={hasDivider ? "Remove split" : "Split foods"}

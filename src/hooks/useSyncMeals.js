@@ -560,16 +560,12 @@ export function useSyncMeals() {
     updateSettingField("calorieGoal", value, normalizePositiveNumber);
   };
 
-  const toggleMealDivider = (meal, foodId) => {
+  const toggleMealDivider = (foodId) => {
     updateSettingField("mealDividers", (current) => {
-      const dividers = normalizeMealDividers(current);
-      const ids = dividers[meal];
-      return {
-        ...dividers,
-        [meal]: ids.includes(foodId)
-          ? ids.filter((id) => id !== foodId)
-          : [...ids, foodId],
-      };
+      const ids = normalizeMealDividers(current);
+      return ids.includes(foodId)
+        ? ids.filter((id) => id !== foodId)
+        : [...ids, foodId];
     }, normalizeMealDividers);
   };
 

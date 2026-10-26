@@ -16,7 +16,7 @@ It helps you:
 
 The app ships with predefined food groups, and you can add your own. You choose grams for each food group in each meal, and the app calculates calories and macros per meal and daily totals. The planner and settings are saved locally by default, and can sync with Google after logging in.
 
-Hover along the left edge of a meal, between foods, to reveal a subtle split icon. Click it to add or remove a full-width divider and group foods you serve together on the plate. The icons also appear on keyboard focus and stay faintly visible on touch screens. Dividers are independent for breakfast, lunch, and dinner, appear in the Eat checklist, and save with the plan (including when duplicated).
+Hover along the left edge of a meal, between foods, to reveal a subtle split icon. Click it to add or remove a full-width divider and group foods you serve together on the plate. The icons also appear on keyboard focus and stay faintly visible on touch screens. Dividers are shared across breakfast, lunch, and dinner: changing one meal updates all three. They appear in the Eat checklist and save with the plan (including when duplicated). Existing dividers from individual meals are combined into the shared list.
 
 In Eat, foods within a plate group have no lines between them. A single divider separates each group.
 

@@ -47,7 +47,7 @@ export default function EatTab({
   });
 
   const mealFoods = meals[mealToEat] || {};
-  const groupByFood = getMealGroupByFood(foodGroups, mealDividers[mealToEat]);
+  const groupByFood = getMealGroupByFood(foodGroups, mealDividers);
   const displayRows = [];
   foodGroups.forEach((food) => {
     const amount = mealFoods[food.id] || 0;

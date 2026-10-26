@@ -1,19 +1,14 @@
-import { MEAL_NAMES } from "./constants";
+import { MEAL_NAMES } from "./constants.js";
 
-// A divider starts a new plate group before a food, independently per meal.
+// Dividers belong to the plan's shared food list. Preserve existing splits
+// when reading the legacy shape that stored a separate list for each meal.
 export function normalizeMealDividers(value) {
-  return Object.fromEntries(
-    MEAL_NAMES.map((meal) => [
-      meal,
-      [
-        ...new Set(
-          Array.isArray(value?.[meal])
-            ? value[meal].filter((id) => typeof id === "string")
-            : [],
-        ),
-      ],
-    ]),
-  );
+  const ids = Array.isArray(value)
+    ? value
+    : MEAL_NAMES.flatMap((meal) =>
+        Array.isArray(value?.[meal]) ? value[meal] : [],
+      );
+  return [...new Set(ids.filter((id) => typeof id === "string"))];
 }
 
 export function getMealGroupByFood(foodGroups, dividerIds = []) {
