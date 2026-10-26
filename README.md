@@ -20,6 +20,8 @@ Hover along the left edge of a meal, between foods, to reveal a subtle split ico
 
 In Eat, foods within a plate group have no lines between them. A single divider separates each group.
 
+Signed-in divider edits are saved locally for the specific account and plan until the account save succeeds. If a save fails, reopening keeps those edits and retries; reconnecting, returning to the app, or the Retry button also retries. A message appears when account syncing fails.
+
 ## Food groups
 
 1. Seeds (like rice, oats, lentils, chickpeas, etc.)

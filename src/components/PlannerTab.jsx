@@ -25,6 +25,9 @@ export default function PlannerTab({
   meals,
   mealDividers,
   onToggleMealDivider,
+  canEditMealDividers,
+  dividerSyncError,
+  onRetryDividerSync,
   mealTotals,
   handleGramsChange,
   calorieGoal,
@@ -56,6 +59,14 @@ export default function PlannerTab({
 
   return (
     <div className='space-y-8 w-full'>
+      {dividerSyncError && (
+        <div role='status' className='flex items-center justify-between gap-4 border-2 border-black bg-[#FFF4B3] px-4 py-3 text-sm font-bold text-black'>
+          <span>Account sync failed. Your dividers are saved on this device.</span>
+          <button type='button' onClick={onRetryDividerSync} className='shrink-0 border-2 border-black bg-white px-3 py-1 font-black uppercase hover:bg-[#FFD600]'>
+            Retry
+          </button>
+        </div>
+      )}
       <div className='bg-white w-full border-4 border-black px-4 pb-4 pt-3 md:px-7 md:pb-7 md:pt-5 shadow-[7px_7px_0px_0px_rgba(0,0,0,1)]'>
         <div className='mb-3 md:mb-5'>
           <h2 className='text-2xl md:text-2xl font-black uppercase tracking-wide truncate'>
@@ -238,10 +249,11 @@ export default function PlannerTab({
                           )}
                           <button
                             type='button'
+                            disabled={!canEditMealDividers}
                             onClick={() => onToggleMealDivider(food.id)}
                             aria-label={`${hasDivider ? "Remove" : "Add"} divider before ${food.name} in ${meal}`}
                             aria-pressed={hasDivider}
-                            title={hasDivider ? "Remove split" : "Split foods"}
+                            title={!canEditMealDividers ? "Loading your meal plan…" : hasDivider ? "Remove split" : "Split foods"}
                             className='meal-split-control absolute z-10 left-0 top-1/2 -translate-x-1/2 -translate-y-1/2 flex h-8 w-8 items-center justify-center cursor-pointer focus-visible:outline-none'
                           >
                             <span className='meal-split-icon flex h-6 w-6 items-center justify-center rounded-sm bg-white text-black/50 shadow-[0_0_0_1px_#00000015] transition-[opacity,color,background-color] duration-150'>

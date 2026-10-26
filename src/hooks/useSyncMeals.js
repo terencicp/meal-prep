@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   addDoc,
   collection,
@@ -39,6 +39,12 @@ import {
 } from "../data/foodGroups";
 
 import { normalizeMealDividers } from "../data/mealDividers";
+import {
+  dividerSaveKey,
+  flushDividerSaves,
+  queueDividerSave,
+  restoreMealDividers,
+} from "../data/mealDividerSaves";
 
 const EMPTY_MEALS = MEAL_NAMES.reduce(
   (acc, mealName) => ({ ...acc, [mealName]: {} }),
@@ -249,6 +255,17 @@ function setAuthRestoreMarker(isActive) {
   }
 }
 
+function persistSettingsToLocalStorage(nextSettings) {
+  try {
+    localStorage.setItem(
+      LOCAL_STORAGE_SETTINGS_KEY,
+      JSON.stringify(nextSettings),
+    );
+  } catch (error) {
+    console.error("Failed to save planner settings to localStorage:", error);
+  }
+}
+
 export function useSyncMeals() {
   const [user, setUser] = useState(null);
   const [meals, setMeals] = useState(loadMealsFromLocalStorage);
@@ -258,13 +275,50 @@ export function useSyncMeals() {
   );
   const [mealPlans, setMealPlans] = useState([]);
   const [activePlanId, setActivePlanId] = useState(null);
-  const [isPlansLoading, setIsPlansLoading] = useState(false);
+  const [isPlansLoading, setIsPlansLoading] = useState(shouldRestorePreviousAuthSession);
+  const [dividerSyncFailure, setDividerSyncFailure] = useState(null);
   const [isInitialPlanSetupRequired, setIsInitialPlanSetupRequired] =
     useState(false);
   const authRuntimeRef = useRef(null);
   const authUnsubscribeRef = useRef(null);
   // Mirrors the catalog so the login handshake can read it without re-running.
   const foodGroupCatalogRef = useRef(foodGroupCatalog);
+  const settingsRef = useRef(settings);
+  const dividerSyncsRef = useRef(new Map());
+
+  const syncPendingDividers = useCallback((userId, planId) => {
+    const key = dividerSaveKey(userId, planId);
+    const inFlight = dividerSyncsRef.current.get(key);
+    if (inFlight) return inFlight;
+
+    const sync = flushDividerSaves(userId, planId, (ids) =>
+      updateDoc(doc(db, "users", userId, "mealPlans", planId), {
+        mealDividers: ids,
+        updatedAt: serverTimestamp(),
+      }),
+    ).then(() => {
+      setDividerSyncFailure((current) => current === key ? null : current);
+    }).catch((error) => {
+      console.error("Failed to sync meal dividers to Firestore:", error);
+      setDividerSyncFailure(key);
+    }).finally(() => {
+      dividerSyncsRef.current.delete(key);
+    });
+    dividerSyncsRef.current.set(key, sync);
+    return sync;
+  }, []);
+
+  useEffect(() => {
+    if (!db || !user?.uid || !activePlanId) return;
+    const retry = () => void syncPendingDividers(user.uid, activePlanId);
+    retry();
+    window.addEventListener("online", retry);
+    window.addEventListener("focus", retry);
+    return () => {
+      window.removeEventListener("online", retry);
+      window.removeEventListener("focus", retry);
+    };
+  }, [user?.uid, activePlanId, syncPendingDividers]);
 
   const foodGroups = useMemo(
     () => resolveVisibleFoodGroups(foodGroupCatalog),
@@ -283,16 +337,11 @@ export function useSyncMeals() {
     }
   };
 
-  const persistSettingsToLocalStorage = (nextSettings) => {
-    try {
-      localStorage.setItem(
-        LOCAL_STORAGE_SETTINGS_KEY,
-        JSON.stringify(nextSettings),
-      );
-    } catch (error) {
-      console.error("Failed to save planner settings to localStorage:", error);
-    }
-  };
+  const applySettingsLocally = useCallback((nextSettings) => {
+    settingsRef.current = nextSettings;
+    setSettings(nextSettings);
+    persistSettingsToLocalStorage(nextSettings);
+  }, []);
 
   const applyCatalogLocally = (nextCatalog) => {
     foodGroupCatalogRef.current = nextCatalog;
@@ -307,6 +356,7 @@ export function useSyncMeals() {
 
     const authDependencies = await loadFirebaseAuth();
     if (!authDependencies) {
+      setIsPlansLoading(false);
       return null;
     }
 
@@ -374,7 +424,7 @@ export function useSyncMeals() {
               name: normalizePlanName(data?.name),
               description: normalizePlanDescription(data?.description),
               meals: normalizeMealPlan(data?.meals),
-              mealDividers: normalizeMealDividers(data?.mealDividers),
+              mealDividers: restoreMealDividers(user.uid, planDoc.id, data?.mealDividers),
               calorieGoal: normalizePositiveNumber(
                 data?.calorieGoal,
                 DEFAULT_CALORIE_GOAL,
@@ -439,8 +489,7 @@ export function useSyncMeals() {
           prepDays: selectedPlan.prepDays,
         };
 
-        setSettings(selectedSettings);
-        persistSettingsToLocalStorage(selectedSettings);
+        applySettingsLocally(selectedSettings);
 
         if (preferredPlanId !== selectedPlan.id) {
           await setDoc(
@@ -463,7 +512,7 @@ export function useSyncMeals() {
     };
 
     void syncMealPlansAfterLogin();
-  }, [user]);
+  }, [user, applySettingsLocally]);
 
   const updateMeals = (updater) => {
     setMeals((prev) => {
@@ -512,48 +561,52 @@ export function useSyncMeals() {
   // The value can be a function of the current one, so a burst of taps on a
   // stepper each build on the last tap instead of on a stale render's value.
   const updateSettingField = (field, value, normalizer) => {
-    setSettings((prev) => {
-      const rawValue = typeof value === "function" ? value(prev[field]) : value;
-      const nextValue = normalizer(rawValue, prev[field]);
-      const nextSettings = {
-        ...prev,
-        [field]: nextValue,
-      };
+    const prev = settingsRef.current;
+    const rawValue = typeof value === "function" ? value(prev[field]) : value;
+    const nextValue = normalizer(rawValue, prev[field]);
+    const nextSettings = {
+      ...prev,
+      [field]: nextValue,
+    };
 
-      persistSettingsToLocalStorage(nextSettings);
+    // Persist and send from the event handler, outside React's state updater
+    // (which can be replayed). Rapid edits build on this current snapshot.
+    applySettingsLocally(nextSettings);
 
-      if (db && user?.uid && activePlanId) {
-        const planDocRef = doc(
-          db,
-          "users",
-          user.uid,
-          "mealPlans",
-          activePlanId,
-        );
+    if (db && user?.uid && activePlanId) {
+      const planDocRef = doc(
+        db,
+        "users",
+        user.uid,
+        "mealPlans",
+        activePlanId,
+      );
+      if (field === "mealDividers") {
+        queueDividerSave(user.uid, activePlanId, nextValue);
+        void syncPendingDividers(user.uid, activePlanId);
+      } else {
         void updateDoc(planDocRef, {
           [field]: nextValue,
           updatedAt: serverTimestamp(),
         }).catch((error) => {
           console.error(`Failed to sync ${field} to Firestore:`, error);
         });
-
-        setMealPlans((prevPlans) =>
-          prevPlans
-            .map((plan) =>
-              plan.id === activePlanId
-                ? {
-                    ...plan,
-                    [field]: nextValue,
-                    updatedAt: new Date(),
-                  }
-                : plan,
-            )
-            .sort(comparePlansByRecent),
-        );
       }
 
-      return nextSettings;
-    });
+      setMealPlans((prevPlans) =>
+        prevPlans
+          .map((plan) =>
+            plan.id === activePlanId
+              ? {
+                  ...plan,
+                  [field]: nextValue,
+                  updatedAt: new Date(),
+                }
+              : plan,
+          )
+          .sort(comparePlansByRecent),
+      );
+    }
   };
 
   const setCalorieGoal = (value) => {
@@ -561,6 +614,7 @@ export function useSyncMeals() {
   };
 
   const toggleMealDivider = (foodId) => {
+    if (isPlansLoading || (user && !activePlanId)) return;
     updateSettingField("mealDividers", (current) => {
       const ids = normalizeMealDividers(current);
       return ids.includes(foodId)
@@ -796,8 +850,7 @@ export function useSyncMeals() {
         prepDays: source.prepDays,
         mealDividers: source.mealDividers,
       };
-      setSettings(nextSettings);
-      persistSettingsToLocalStorage(nextSettings);
+      applySettingsLocally(nextSettings);
 
       await setDoc(
         doc(db, "users", user.uid),
@@ -860,7 +913,7 @@ export function useSyncMeals() {
     persistMealsToLocalStorage(selectedPlan.meals);
 
     const nextSettings = {
-      mealDividers: normalizeMealDividers(selectedPlan.mealDividers),
+      mealDividers: restoreMealDividers(user.uid, planId, selectedPlan.mealDividers),
       calorieGoal: normalizePositiveNumber(
         selectedPlan.calorieGoal,
         DEFAULT_CALORIE_GOAL,
@@ -871,8 +924,7 @@ export function useSyncMeals() {
       ),
     };
 
-    setSettings(nextSettings);
-    persistSettingsToLocalStorage(nextSettings);
+    applySettingsLocally(nextSettings);
     applyCatalogLocally(normalizeFoodGroupCatalog(selectedPlan.catalog));
     setIsInitialPlanSetupRequired(false);
 
@@ -971,6 +1023,12 @@ export function useSyncMeals() {
     setMeals: updateMeals,
     mealDividers: settings.mealDividers,
     toggleMealDivider,
+    canEditMealDividers: !isPlansLoading && (!user || Boolean(activePlanId)),
+    dividerSyncError: Boolean(user?.uid && activePlanId &&
+      dividerSyncFailure === dividerSaveKey(user.uid, activePlanId)),
+    retryDividerSync: () => {
+      if (user?.uid && activePlanId) void syncPendingDividers(user.uid, activePlanId);
+    },
     calorieGoal: settings.calorieGoal,
     prepDays: settings.prepDays,
     setCalorieGoal,

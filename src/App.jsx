@@ -260,6 +260,9 @@ export default function App() {
     setMeals,
     mealDividers,
     toggleMealDivider,
+    canEditMealDividers,
+    dividerSyncError,
+    retryDividerSync,
     calorieGoal,
     setCalorieGoal,
     prepDays,
@@ -805,6 +808,9 @@ export default function App() {
             meals={meals}
             mealDividers={mealDividers}
             onToggleMealDivider={toggleMealDivider}
+            canEditMealDividers={canEditMealDividers}
+            dividerSyncError={dividerSyncError}
+            onRetryDividerSync={retryDividerSync}
             mealTotals={mealTotals}
             handleGramsChange={handleGramsChange}
             calorieGoal={calorieGoal}
