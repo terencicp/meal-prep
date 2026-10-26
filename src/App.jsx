@@ -258,6 +258,8 @@ export default function App() {
     user,
     meals,
     setMeals,
+    mealDividers,
+    toggleMealDivider,
     calorieGoal,
     setCalorieGoal,
     prepDays,
@@ -768,6 +770,7 @@ export default function App() {
           {activeTab === "eat" && (
             <EatTab
               meals={meals}
+              mealDividers={mealDividers}
               mealToEat={mealToEat}
               setMealToEat={setMealToEat}
               checkedItems={checkedItems}
@@ -800,6 +803,8 @@ export default function App() {
         {activeTab === "planner" && (
           <PlannerTab
             meals={meals}
+            mealDividers={mealDividers}
+            onToggleMealDivider={toggleMealDivider}
             mealTotals={mealTotals}
             handleGramsChange={handleGramsChange}
             calorieGoal={calorieGoal}

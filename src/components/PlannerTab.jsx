@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { SeparatorHorizontal } from "lucide-react";
 import { MEAL_NAMES } from "../data/constants";
 
 const bottomButtonClass =
@@ -22,6 +23,8 @@ const MacroBadge = ({ label, value, colorClass, textClass = "text-black" }) => (
 
 export default function PlannerTab({
   meals,
+  mealDividers,
+  onToggleMealDivider,
   mealTotals,
   handleGramsChange,
   calorieGoal,
@@ -184,11 +187,13 @@ export default function PlannerTab({
           const mealFats = Math.max(0, mealTotals[meal].fats);
           const mealProtein = Math.max(0, mealTotals[meal].protein);
           const totalMacros = Math.max(1, mealCarbs + mealFats + mealProtein);
+          const dividerIds = mealDividers[meal] || [];
 
           return (
             <div
               key={meal}
-              className='bg-white border-4 border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] overflow-hidden flex flex-col'
+              aria-label={`${meal} meal`}
+              className='bg-white border-4 border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] flex flex-col'
             >
               <div className='border-b-4 border-black px-4 py-4 bg-[#FFD600]'>
                 <div className='mb-1'>
@@ -219,39 +224,61 @@ export default function PlannerTab({
                 </div>
               </div>
 
-              <div className='px-4 py-3 space-y-2'>
-                {foodGroups.map((food) => {
+              <div className='px-4 py-3'>
+                {foodGroups.map((food, index) => {
                   const grams = meals[meal]?.[food.id] || "";
                   const isActive = grams > 0;
+                  const hasDivider = dividerIds.includes(food.id);
 
                   return (
-                    <div
-                      key={food.id}
-                      className={`flex items-center justify-between text-black ${isActive ? "opacity-100" : "opacity-40 hover:opacity-80"}`}
-                    >
-                      <span className='font-bold uppercase tracking-wide text-xl md:text-xl text-black'>
-                        {food.name}
-                      </span>
-
-                      <div className='relative flex items-center justify-end w-20'>
-                        <input
-                          type='number'
-                          min='0'
-                          step='5'
-                          value={grams}
-                          onChange={(e) =>
-                            handleGramsChange(meal, food.id, e.target.value)
-                          }
-                          onFocus={handleSelectInputContent}
-                          onClick={handleSelectInputContent}
-                          placeholder='0'
-                          className='w-full text-right pr-6 pl-2 py-1 border-[3px] border-black bg-white text-base md:text-lg font-bold text-black placeholder:text-black focus:outline-none focus:bg-[#FFD600] focus:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none'
-                        />
-                        <span className='absolute right-2 text-sm md:text-base text-black pointer-events-none font-bold'>
-                          g
+                    <React.Fragment key={food.id}>
+                      {index > 0 && (
+                        <div className={`relative -mx-4 ${hasDivider ? "h-7" : "h-2"}`}>
+                          {hasDivider && (
+                            <div role='separator' aria-label='Plate group divider' className='absolute inset-x-0 top-1/2 -translate-y-1/2 border-t-4 border-black' />
+                          )}
+                          <button
+                            type='button'
+                            onClick={() => onToggleMealDivider(meal, food.id)}
+                            aria-label={`${hasDivider ? "Remove" : "Add"} divider before ${food.name} in ${meal}`}
+                            aria-pressed={hasDivider}
+                            title={hasDivider ? "Remove split" : "Split foods"}
+                            className='meal-split-control absolute z-10 left-0 top-1/2 -translate-x-1/2 -translate-y-1/2 flex h-8 w-8 items-center justify-center cursor-pointer focus-visible:outline-none'
+                          >
+                            <span className='meal-split-icon flex h-6 w-6 items-center justify-center rounded-sm bg-white text-black/50 shadow-[0_0_0_1px_#00000015] transition-[opacity,color,background-color] duration-150'>
+                              <SeparatorHorizontal size={16} strokeWidth={1.75} aria-hidden='true' />
+                            </span>
+                          </button>
+                        </div>
+                      )}
+                      <div
+                        className={`flex items-center justify-between text-black ${isActive ? "opacity-100" : "opacity-40 hover:opacity-80"}`}
+                      >
+                        <span className='font-bold uppercase tracking-wide text-xl md:text-xl text-black'>
+                          {food.name}
                         </span>
+
+                        <div className='relative flex items-center justify-end w-20'>
+                          <input
+                            type='number'
+                            min='0'
+                            step='5'
+                            value={grams}
+                            aria-label={`${food.name} grams in ${meal}`}
+                            onChange={(e) =>
+                              handleGramsChange(meal, food.id, e.target.value)
+                            }
+                            onFocus={handleSelectInputContent}
+                            onClick={handleSelectInputContent}
+                            placeholder='0'
+                            className='w-full text-right pr-6 pl-2 py-1 border-[3px] border-black bg-white text-base md:text-lg font-bold text-black placeholder:text-black focus:outline-none focus:bg-[#FFD600] focus:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none'
+                          />
+                          <span className='absolute right-2 text-sm md:text-base text-black pointer-events-none font-bold'>
+                            g
+                          </span>
+                        </div>
                       </div>
-                    </div>
+                    </React.Fragment>
                   );
                 })}
               </div>

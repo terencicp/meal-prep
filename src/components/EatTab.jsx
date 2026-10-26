@@ -8,9 +8,11 @@ import {
 } from "lucide-react";
 import { MEAL_NAMES } from "../data/constants";
 import { buildFoodGroupMap } from "../data/foodGroups";
+import { getMealGroupByFood } from "../data/mealDividers";
 
 export default function EatTab({
   meals,
+  mealDividers,
   mealToEat,
   setMealToEat,
   checkedItems,
@@ -45,6 +47,7 @@ export default function EatTab({
   });
 
   const mealFoods = meals[mealToEat] || {};
+  const groupByFood = getMealGroupByFood(foodGroups, mealDividers[mealToEat]);
   const displayRows = [];
   foodGroups.forEach((food) => {
     const amount = mealFoods[food.id] || 0;
@@ -145,7 +148,13 @@ export default function EatTab({
               </p>
             </div>
           ) : (
-            displayRows.map((row) => {
+            displayRows.map((row, index) => {
+              const startsNewGroup = index > 0 &&
+                groupByFood.get(row.anchorFoodId) !==
+                groupByFood.get(displayRows[index - 1].anchorFoodId);
+              const endsGroup = index === displayRows.length - 1 ||
+                groupByFood.get(row.anchorFoodId) !==
+                groupByFood.get(displayRows[index + 1].anchorFoodId);
               const isSelected =
                 isSubstitutionMode &&
                 selectedSubstitutionAnchors.includes(row.anchorFoodId);
@@ -161,79 +170,83 @@ export default function EatTab({
                     : "bg-[#FFFBE6] hover:bg-[#FFF176]";
 
               return (
-                <div
-                  key={row.anchorFoodId}
-                  onClick={() => handleRowClick(row)}
-                  className={`flex items-center justify-between px-4 py-4 border-b-4 border-black transition-colors ${rowBg} ${
-                    isCheckedDisabledForSub
-                      ? "cursor-not-allowed"
-                      : "cursor-pointer"
-                  }`}
-                >
-                  <div className='flex items-center'>
-                    <span
-                      className={`flex items-center justify-center overflow-hidden transition-all duration-300 ease-out ${
-                        isSubstitutionMode
-                          ? "w-0 mr-0 opacity-0"
-                          : "w-6 mr-4 opacity-100"
-                      }`}
-                      aria-hidden='true'
-                    >
-                      {row.isChecked ? (
-                        <CheckCircle2
-                          className='w-6 h-6 text-black shrink-0'
-                          strokeWidth={2.8}
-                        />
-                      ) : (
-                        <Circle
-                          className='w-6 h-6 text-black shrink-0'
-                          strokeWidth={2.8}
-                        />
-                      )}
-                    </span>
-                    <div className='flex items-center gap-1.5'>
-                      <span
-                        className={`text-lg font-black uppercase tracking-wide ${
-                          row.isChecked
-                            ? "line-through decoration-[3px] decoration-black text-black"
-                            : "text-black"
-                        }`}
-                      >
-                        {row.displayName}
-                      </span>
-                      {(row.isSubstituted || isSelected) && (
-                        <span
-                          className='inline-flex items-center text-black/80 ml-1'
-                          title={
-                            isSelected
-                              ? "Selected for substitution"
-                              : "Replaced"
-                          }
-                          aria-label={
-                            isSelected
-                              ? "Selected for substitution"
-                              : "Replaced"
-                          }
-                        >
-                          <RefreshCw
-                            className='w-3.5 h-3.5 sm:w-4 sm:h-4'
-                            strokeWidth={2.5}
-                          />
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  <span
-                    className={`text-xl font-black ${
-                      row.isChecked
-                        ? "line-through decoration-[3px] decoration-black text-black"
-                        : "text-black"
+                <React.Fragment key={row.anchorFoodId}>
+                  {startsNewGroup && (
+                    <div role='separator' aria-label='Plate group divider' className='border-t-4 border-black' />
+                  )}
+                  <div
+                    onClick={() => handleRowClick(row)}
+                    className={`flex items-center justify-between px-4 ${index === 0 || startsNewGroup ? "pt-4" : "pt-1.5"} ${endsGroup ? "pb-4" : "pb-1.5"} transition-colors ${rowBg} ${
+                      isCheckedDisabledForSub
+                        ? "cursor-not-allowed"
+                        : "cursor-pointer"
                     }`}
                   >
-                    {row.displayAmount}
-                    <span className='text-sm font-bold ml-1'>g</span>
-                  </span>
-                </div>
+                    <div className='flex items-center'>
+                      <span
+                        className={`flex items-center justify-center overflow-hidden transition-all duration-300 ease-out ${
+                          isSubstitutionMode
+                            ? "w-0 mr-0 opacity-0"
+                            : "w-6 mr-4 opacity-100"
+                        }`}
+                        aria-hidden='true'
+                      >
+                        {row.isChecked ? (
+                          <CheckCircle2
+                            className='w-6 h-6 text-black shrink-0'
+                            strokeWidth={2.8}
+                          />
+                        ) : (
+                          <Circle
+                            className='w-6 h-6 text-black shrink-0'
+                            strokeWidth={2.8}
+                          />
+                        )}
+                      </span>
+                      <div className='flex items-center gap-1.5'>
+                        <span
+                          className={`text-lg font-black uppercase tracking-wide ${
+                            row.isChecked
+                              ? "line-through decoration-[3px] decoration-black text-black"
+                              : "text-black"
+                          }`}
+                        >
+                          {row.displayName}
+                        </span>
+                        {(row.isSubstituted || isSelected) && (
+                          <span
+                            className='inline-flex items-center text-black/80 ml-1'
+                            title={
+                              isSelected
+                                ? "Selected for substitution"
+                                : "Replaced"
+                            }
+                            aria-label={
+                              isSelected
+                                ? "Selected for substitution"
+                                : "Replaced"
+                            }
+                          >
+                            <RefreshCw
+                              className='w-3.5 h-3.5 sm:w-4 sm:h-4'
+                              strokeWidth={2.5}
+                            />
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <span
+                      className={`text-xl font-black ${
+                        row.isChecked
+                          ? "line-through decoration-[3px] decoration-black text-black"
+                          : "text-black"
+                      }`}
+                    >
+                      {row.displayAmount}
+                      <span className='text-sm font-bold ml-1'>g</span>
+                    </span>
+                  </div>
+                </React.Fragment>
               );
             })
           )}

@@ -17,3 +17,24 @@ body {
   font-family: "Bebas Neue", sans-serif;
   letter-spacing: 0.03em;
 }
+
+.meal-split-icon {
+  opacity: 0;
+}
+
+.meal-split-control:hover .meal-split-icon,
+.meal-split-control:focus-visible .meal-split-icon {
+  opacity: 1;
+  color: #000;
+}
+
+.meal-split-control:focus-visible .meal-split-icon {
+  outline: 2px solid #0055ff;
+  outline-offset: 2px;
+}
+
+@media (hover: none) {
+  .meal-split-icon {
+    opacity: 0.45;
+  }
+}

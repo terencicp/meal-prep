@@ -38,6 +38,8 @@ import {
   resolveVisibleFoodGroups,
 } from "../data/foodGroups";
 
+import { normalizeMealDividers } from "../data/mealDividers";
+
 const EMPTY_MEALS = MEAL_NAMES.reduce(
   (acc, mealName) => ({ ...acc, [mealName]: {} }),
   {},
@@ -168,11 +170,13 @@ function loadSettingsFromLocalStorage() {
       return {
         calorieGoal: DEFAULT_CALORIE_GOAL,
         prepDays: DEFAULT_PREP_DAYS,
+        mealDividers: normalizeMealDividers(),
       };
     }
 
     const parsedSettings = JSON.parse(storedSettings);
     return {
+      mealDividers: normalizeMealDividers(parsedSettings?.mealDividers),
       calorieGoal: normalizePositiveNumber(
         parsedSettings?.calorieGoal,
         DEFAULT_CALORIE_GOAL,
@@ -187,6 +191,7 @@ function loadSettingsFromLocalStorage() {
     return {
       calorieGoal: DEFAULT_CALORIE_GOAL,
       prepDays: DEFAULT_PREP_DAYS,
+      mealDividers: normalizeMealDividers(),
     };
   }
 }
@@ -369,6 +374,7 @@ export function useSyncMeals() {
               name: normalizePlanName(data?.name),
               description: normalizePlanDescription(data?.description),
               meals: normalizeMealPlan(data?.meals),
+              mealDividers: normalizeMealDividers(data?.mealDividers),
               calorieGoal: normalizePositiveNumber(
                 data?.calorieGoal,
                 DEFAULT_CALORIE_GOAL,
@@ -428,6 +434,7 @@ export function useSyncMeals() {
         applyCatalogLocally(selectedPlan.catalog);
 
         const selectedSettings = {
+          mealDividers: selectedPlan.mealDividers,
           calorieGoal: selectedPlan.calorieGoal,
           prepDays: selectedPlan.prepDays,
         };
@@ -551,6 +558,19 @@ export function useSyncMeals() {
 
   const setCalorieGoal = (value) => {
     updateSettingField("calorieGoal", value, normalizePositiveNumber);
+  };
+
+  const toggleMealDivider = (meal, foodId) => {
+    updateSettingField("mealDividers", (current) => {
+      const dividers = normalizeMealDividers(current);
+      const ids = dividers[meal];
+      return {
+        ...dividers,
+        [meal]: ids.includes(foodId)
+          ? ids.filter((id) => id !== foodId)
+          : [...ids, foodId],
+      };
+    }, normalizeMealDividers);
   };
 
   const setPrepDays = (value) => {
@@ -694,6 +714,7 @@ export function useSyncMeals() {
         catalog: EMPTY_FOOD_GROUP_CATALOG,
         calorieGoal: DEFAULT_CALORIE_GOAL,
         prepDays: DEFAULT_PREP_DAYS,
+        mealDividers: normalizeMealDividers(),
       };
     }
 
@@ -701,6 +722,7 @@ export function useSyncMeals() {
     if (mode === "duplicate" && activePlan) {
       return {
         meals: activePlan.meals,
+        mealDividers: normalizeMealDividers(activePlan.mealDividers),
         catalog: normalizeFoodGroupCatalog(activePlan.catalog),
         calorieGoal: activePlan.calorieGoal,
         prepDays: activePlan.prepDays,
@@ -710,6 +732,7 @@ export function useSyncMeals() {
     return {
       meals,
       catalog: foodGroupCatalogRef.current,
+      mealDividers: settings.mealDividers,
       calorieGoal: settings.calorieGoal,
       prepDays: settings.prepDays,
     };
@@ -736,6 +759,7 @@ export function useSyncMeals() {
           name: normalizedName,
           description: normalizedDescription,
           meals: source.meals,
+          mealDividers: source.mealDividers,
           calorieGoal: source.calorieGoal,
           prepDays: source.prepDays,
           totalKcal,
@@ -750,6 +774,7 @@ export function useSyncMeals() {
         name: normalizedName,
         description: normalizedDescription,
         meals: source.meals,
+        mealDividers: source.mealDividers,
         calorieGoal: source.calorieGoal,
         prepDays: source.prepDays,
         totalKcal,
@@ -773,6 +798,7 @@ export function useSyncMeals() {
       const nextSettings = {
         calorieGoal: source.calorieGoal,
         prepDays: source.prepDays,
+        mealDividers: source.mealDividers,
       };
       setSettings(nextSettings);
       persistSettingsToLocalStorage(nextSettings);
@@ -838,6 +864,7 @@ export function useSyncMeals() {
     persistMealsToLocalStorage(selectedPlan.meals);
 
     const nextSettings = {
+      mealDividers: normalizeMealDividers(selectedPlan.mealDividers),
       calorieGoal: normalizePositiveNumber(
         selectedPlan.calorieGoal,
         DEFAULT_CALORIE_GOAL,
@@ -946,6 +973,8 @@ export function useSyncMeals() {
     user,
     meals,
     setMeals: updateMeals,
+    mealDividers: settings.mealDividers,
+    toggleMealDivider,
     calorieGoal: settings.calorieGoal,
     prepDays: settings.prepDays,
     setCalorieGoal,
